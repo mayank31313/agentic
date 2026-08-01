@@ -55,7 +55,7 @@ DONE
 
 ### Commit
 
-- `PENDING` — fix-round commit created after this update
+- `b53fe21` — `fix: harden Proxmox api_url validation`
 
 ### Test command / output summary
 
