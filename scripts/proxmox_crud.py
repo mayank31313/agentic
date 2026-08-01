@@ -66,25 +66,22 @@ def _normalize_api_url(api_url: str) -> str:
     parsed = urlsplit(api_url if "://" in api_url else f"//{api_url}", scheme="https")
     if not parsed.netloc:
         raise ValueError("api_url must include a host")
+    if parsed.scheme and parsed.scheme != "https":
+        raise ValueError("api_url must use https")
+    if parsed.username or parsed.password:
+        raise ValueError("api_url must not include userinfo")
+    if parsed.query or parsed.fragment:
+        raise ValueError("api_url must not include query or fragment")
+    if parsed.path not in {"", "/"}:
+        raise ValueError("api_url must not include a path")
+    if parsed.port is not None and parsed.port != 8006:
+        raise ValueError("api_url port must be 8006")
 
-    netloc = parsed.netloc
-    if parsed.port is None:
-        hostname = parsed.hostname
-        if hostname is None:
-            raise ValueError("api_url must include a host")
-        if parsed.username:
-            auth = parsed.username
-            if parsed.password is not None:
-                auth = f"{auth}:{parsed.password}"
-            netloc = f"{auth}@{hostname}:8006"
-        else:
-            netloc = f"{hostname}:8006"
+    hostname = parsed.hostname
+    if hostname is None:
+        raise ValueError("api_url must include a host")
 
-    path = parsed.path.rstrip("/")
-    if not path.endswith("/api2/json"):
-        path = f"{path}/api2/json" if path else "/api2/json"
-
-    return urlunsplit((parsed.scheme or "https", netloc, path, "", ""))
+    return f"https://{hostname}:8006/api2/json"
 
 
 def load_manifest(path: Path) -> dict[str, Any]:
@@ -97,6 +94,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     clusters = manifest.get("clusters")
     if not isinstance(clusters, list):
         raise ValueError("manifest clusters must be a list")
+    if not clusters:
+        raise ValueError("manifest must contain at least one cluster")
 
     normalized_clusters: list[dict[str, Any]] = []
     seen_names: set[str] = set()

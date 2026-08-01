@@ -96,6 +96,39 @@ def test_load_manifest_rejects_invalid_resource_type(tmp_path: Path):
         proxmox.load_manifest(manifest_path)
 
 
+@pytest.mark.parametrize(
+    ("api_url", "message"),
+    [
+        ("http://pve.lab.example", "must use https"),
+        ("https://user@pve.lab.example", "must not include userinfo"),
+        ("https://pve.lab.example/path", "must not include a path"),
+        ("https://pve.lab.example?x=1", "must not include query or fragment"),
+        ("https://pve.lab.example#frag", "must not include query or fragment"),
+        ("https://pve.lab.example:8007", "port must be 8006"),
+    ],
+)
+def test_load_manifest_rejects_invalid_api_url_values(tmp_path: Path, api_url: str, message: str):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text(
+        "clusters:\n"
+        "  - name: lab\n"
+        f"    api_url: {api_url}\n"
+        "    resources: []\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=message):
+        proxmox.load_manifest(manifest_path)
+
+
+def test_load_manifest_rejects_empty_clusters(tmp_path: Path):
+    manifest_path = tmp_path / "manifest.yml"
+    manifest_path.write_text("clusters: []\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="must contain at least one cluster"):
+        proxmox.load_manifest(manifest_path)
+
+
 def test_client_wraps_http_error(monkeypatch):
     error = HTTPError(
         "https://pve.lab.example:8006/api2/json/version",
