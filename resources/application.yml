@@ -1,0 +1,27 @@
+management.context.thread.enable: true
+rcn:
+  events.enable: true
+  message:
+    brokers:
+      standalone:
+        enable: true
+secrets:
+  provider:
+    vault:
+      addr: https://vault.internal.iorcloud.co.in/
+      enable: false
+app:
+  agentic:
+    config_path: resources/agentic.json
+  channels:
+    telegram:
+      token: 8112528825:AAEvS6LdZGw3Wig3shL8DglQSawDsfPMq4k
+      default_chat_id: 8705816265
+
+
+  externals:
+    localai:
+      name: localai
+      base_url: 'http://192.168.47.109:9000/v1'
+      default_image_model: "realistic-vision"
+      config_file:

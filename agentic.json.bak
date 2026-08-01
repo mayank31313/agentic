@@ -1,0 +1,41 @@
+{
+    "workspace": "./workspace",
+
+    "agents": [
+        {
+            "system_prompt_path": "AGENTS.md",
+            "workspace_dir": "./workspace",
+            "name": "main",
+            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
+            "context_window": 128000,
+            "denied_tools": [],
+            "tools": [
+                {
+                    "name": "run_shell_command",
+                    "require_approval": true,
+                    "approval_text": "This tool needs approval to run"
+                },
+                {
+                    "name": "generate_image",
+                    "require_approval": false,
+                    "approval_text": null
+                },
+                {
+                    "name": "swamp_sub_agent",
+                    "require_approval": false,
+                    "approval_text": null
+                }
+            ],
+            "base_url": "https://integrate.api.nvidia.com/v1"
+        }
+    ],
+    "mcpServers": {
+        "alice_mcps": {
+            "url": "http://localhost:8811/sse",
+            "transport": "sse",
+            "headers": {
+                "Authorization": "Bearer 6s4uic0iosrjefufic7hiiuv6jp9qtm0a6fk5qg4x7565nng59"
+            }
+        }
+    }
+}
