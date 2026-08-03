@@ -4,7 +4,7 @@ import logging
 import os
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from cndi.annotations.events import EventBus
 from cndi.env import getContextEnvironment
@@ -12,30 +12,28 @@ from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.types import Command, Interrupt
 from pydantic import BaseModel, Field
 
-from app.channels.telegram import TelegramToolNotifierMiddleware, ToolsRegistry
+from agentic.app.channels.telegram import TelegramToolNotifierMiddleware, ToolsRegistry
 from cndi.initializers import AppInitializer
-from cndi.annotations import Component
+from cndi.annotations import Component, Bean
 from langchain_core.callbacks import (
     CallbackManagerForToolRun,
     AsyncCallbackManagerForToolRun,
 )
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import BaseTool
 from telegram import Update, ReplyKeyboardMarkup, \
     ReplyKeyboardRemove
 from telegram.error import BadRequest
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import Application, ContextTypes, MessageHandler, filters
 from telegram.constants import ParseMode
 
-from src.app.agents import get_main_agent
-from app.config import AgentConfig, AgenticConfig
-from app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID
-from app.memory_compaction import create_memory_compaction_agent
-from app.memory_retriever import get_memory_retriever
-from app.reactions import add_reaction, remove_reaction
-from app.stable_diffusion.tools import LocalAiApi, ImageGenerationRequest
+from agentic.app.agents import get_main_agent
+from agentic.app.config import AgentConfig, AgenticConfig, ToolConfig, SkillsConfig
+from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, AGENTIC_FILE_NAME_PROP
+from agentic.app.memory_compaction import create_memory_compaction_agent
+from agentic.app.memory_retriever import get_memory_retriever
+from agentic.app.reactions import add_reaction, remove_reaction
 import json
 
-logging.getLogger('cndi').setLevel('DEBUG')
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -47,9 +45,6 @@ logger = logging.getLogger(__name__)
 
 # Context variable to store the current chat ID for the memory retriever tool
 chat_id_var = contextvars.ContextVar('chat_id')
-
-os.environ['OPENAI_API_BASE'] = 'https://integrate.api.nvidia.com/v1'
-os.environ['OPENAI_API_KEY'] = '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'
 
 class MemoryRetrieverTool(BaseTool):
     name: str = "memory_retriever"
@@ -151,11 +146,7 @@ async def retrieve_relevant_context(chat_id: int, query: str, limit: int = 3) ->
         logger.debug(f"Failed to retrieve relevant context: {e}")
         return ""
 
-memory_compaction_agent = create_memory_compaction_agent()
 memory_retriever = get_memory_retriever(es_host="localhost", es_port=9200, enabled=True)
-
-
-
 
 async def compact_memory_with_agent(chat_id: int, max_tokens: int = 2000) -> bool:
     """
@@ -248,12 +239,57 @@ async def send_periodic_chat_action(context, chat_id: int, stop_event: asyncio.E
             logger.debug(f"Failed to send chat action: {e}")
             await asyncio.sleep(interval)
 
-
-os.environ['TAVILY_API_KEY'] = "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"
-
 class ChannelMetadata(BaseModel):
     chat_id: str = Field(description='Chat ID for channel')
     message_id: str = Field(description='Message ID for chat')
+
+@Bean()
+def getAgenticConfig() -> AgenticConfig:
+    filename = getContextEnvironment(AGENTIC_FILE_NAME_PROP)
+    try:
+        if os.path.exists(filename):
+            with open(filename, "r") as config_json:
+                return AgenticConfig.model_validate(json.load(config_json))
+    except Exception as e:
+        raise e
+
+    with open(filename, "w") as config_json:
+        agentic = AgenticConfig(
+            workspace="./workspace",
+            skills=[
+                SkillsConfig(name='superpowers', path='skills/superpowers')
+            ],
+            agents=[
+                AgentConfig(
+                    system_prompt_path="AGENTS.md",
+                    workspace_dir="./workspace",
+                    name="main",
+                    model="openai:nvidia/nemotron-3-super-120b-a12b",
+                    base_url="https://integrate.api.nvidia.com/v1",
+                    tools=tuple([ToolConfig(name='run_shell_command', require_approval=True, approval_text="This tool needs approval to run"),
+                                 ToolConfig(name='generate_image', require_approval=False),
+                                 ToolConfig(name='swamp_sub_agent', require_approval=False)]),
+                    denied_tools=tuple([])
+                )
+            ],
+            mcpServers={
+                "alice_mcps": {
+                    "url": "http://host.docker.internal:8811/sse",
+                    "transport": "sse",
+                    "headers": {
+                        "Authorization": "Bearer {}"
+                    }
+                },
+                "agentic_mcp": {
+                    "url": "http://host.docker.internal:8082/mcp",
+                    "transport": "http"
+                }
+            }
+        )
+
+        json.dump(agentic.model_dump(mode="json"), fp=config_json, indent=4)
+
+    return agentic
 
 
 @Component
@@ -265,11 +301,15 @@ class AgenticBot:
                  ):
         self.middelwares = [telegram_tool_middleware]
         self.max_approvals = 5
+        self.agenticConfig = agenticConfig
         self.agentConfig: AgentConfig = next(filter(lambda x: x.name == 'main',agenticConfig.agents))
         self.tool_registry = tool_registry
         self.event_bus = event_bus
         self.agent = None
         self.content_ids = set()
+
+        if self.agentConfig.agent_model_config is None:
+            self.agentConfig.agent_model_config = next(filter(lambda x: x.model_id == self.agentConfig.model_id, agenticConfig.models))
 
     def initialise_agent(self):
         runnable_tools, approvable_tools = [], []
@@ -282,7 +322,7 @@ class AgenticBot:
         if len(tools) > 0:
             logger.info("Available tools in context")
             for i, t in enumerate(tools):
-                logger.info(f"{i}: {t}")
+                logger.info(f"{i}: {t.name}")
 
 
         self.agent = get_main_agent(agent_config=self.agentConfig,
@@ -349,7 +389,7 @@ Args: {action_requests[0]['args']}
                 logger.debug(f"[Chat {chat_id}] Skipping duplicate message ID: {message.id}")
                 continue
             self.content_ids.add(message.id)
-            if type(message) == ToolMessage and message.content.startswith('json:'):
+            if type(message) == ToolMessage and type(message.content) == str and message.content.startswith('json:'):
                 contents = json.loads(message.content[5:])
                 for content in contents:
                     await self.send_message(content, update)
@@ -364,12 +404,8 @@ Args: {action_requests[0]['args']}
         return response_text
 
 def main(application: Application,
-         agentic_bot: AgenticBot,
-         localai: LocalAiApi):
+         agentic_bot: AgenticBot):
     agentic_bot.initialise_agent()
-
-
-
 
     # data = asyncio.run(localai.generate_image_to_image_as_task(ImageGenerationRequest(
     #     prompt="Fix the finger in the image to make it look natural and realistic.",
@@ -452,9 +488,10 @@ def main(application: Application,
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-
-if __name__ == "__main__":
+def run_bot():
     app = AppInitializer()
     app.componentScan("cndi.secrets")
-    app.componentScan('app')
+    app.componentScan('agentic.app')
     app.run(onComplete=main)
+if __name__ == "__main__":
+    run_bot()

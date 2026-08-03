@@ -1,19 +1,16 @@
 from typing import List
 
 from cndi.env import getContextEnvironment
-from cndi.secrets.vault import VaultSecretProvider
 from langchain.agents.middleware import AgentMiddleware
 import logging
 from cndi.annotations import Component, Bean
 from langchain_core.tools import BaseTool
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from telegram import Bot, Message, Update, ForceReply
-import os
 
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, TELEGRAM_BOT_TOKEN_PROP
+from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, TELEGRAM_BOT_TOKEN_PROP
 
 logger = logging.getLogger(__name__)
 

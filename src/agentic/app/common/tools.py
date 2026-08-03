@@ -10,8 +10,8 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
-from app.channels.telegram import ToolsRegistry
-from app.config import AgenticConfig
+from agentic.app.channels.telegram import ToolsRegistry
+from agentic.app.config import AgenticConfig
 
 
 class SubAgentDetails(BaseModel):

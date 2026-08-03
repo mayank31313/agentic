@@ -1,6 +1,6 @@
 import os
 
-from apscheduler.events import EVENT_ALL, EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_REMOVED
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_REMOVED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from cndi.annotations import Bean
@@ -10,8 +10,8 @@ from deepagents.backends import FilesystemBackend
 from telegram import Bot
 from tinydb import TinyDB
 
-from app.constants import CRON_UPDATE_EVENT
-from app.scheduler.tools import CronSchedule
+from agentic.app.constants import CRON_UPDATE_EVENT
+from agentic.app.scheduler.tools import CronSchedule
 import logging
 
 logger = logging.getLogger(__name__)

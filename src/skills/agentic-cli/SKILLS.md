@@ -1,6 +1,6 @@
 ---
 name: agentic-cli
-description: Use this skill whenever the user wants to interact with your configuration or its agentic.json configuration — including starting the bot server, sending messages, reading config values, and adding, creating, updating, removing, listing, or running configured agents (e.g. "add a new agent for image processing", "create an agent that does X", "update the model for the summarizer agent", "remove an agent from the config", "what agents are configured"). Also covers inspecting the config JSON schema and listing available MCP tools. Trigger this any time the user mentions "agentic cli", "agentic.json", the bot app, agent configuration, or asks to check/change any value in the bot's config — including requests that don't literally say "config" but describe adding/editing/removing an agent entry. Always invoke the tool via shell (via scripts/run_agentic.py) rather than guessing at or hand-writing config file contents.
+description: Use this skill whenever the user wants to interact with your configuration or its agentic.json configuration — including starting the bot server, sending messages, reading config values, and adding, creating, updating, removing, listing, or running configured agents (e.g. "add a new agent for image processing", "create an agent that does X", "update the model for the summarizer agent", "remove an agent from the config", "what agents are configured"). Also covers inspecting the config JSON schema and listing available MCP tools. Trigger this any time the user mentions "agentic cli", "agentic.json", the bot app, agent configuration, or asks to check/change any value in the bot's config — including requests that don't literally say "config" but describe adding/editing/removing an agent entry. Always invoke the tool via shell (direct agentic command) rather than guessing at or hand-writing config file contents.
 ---
 
 # Agentic CLI
@@ -13,92 +13,62 @@ agents. Run all of these as real shell commands — don't hand-edit
 
 ## Before you start
 
-This project is `uv`-managed, so **always invoke the CLI as `uv run agentic`**,
-not a bare `agentic` — a bare invocation will fail or silently use the wrong
-Python environment (missing deps, stale install) if the project venv isn't
-already activated.
-
 Confirm the CLI is installed and runnable:
 
 ```bash
-uv run agentic --help
+agentic --help
 ```
 
-If that fails, try, in order:
+If that fails, try:
 
 ```bash
-uv sync                        # ensure deps/venv are installed, then retry
-uv run python -m app.cli --help   # in case the console-script entry point isn't registered
+python -m app.cli --help   # in case the console-script entry point isn't registered
 ```
 
 Check the project's `pyproject.toml` for the console-script entry point name
 (under `[project.scripts]`) before assuming the command is `agentic`.
 
-**Always run `uv run agentic ...` from the project root** — this is also
+**Always run `agentic ...` from the project root** — this is also
 where `agentic.json` lives, since `config`/`agents` subcommands read it from
 the **current working directory** by default. If you're not in the project
 root, either `cd` there first or pass an explicit file path as the trailing
-argument where the command supports it. `uv run` itself does not change your
-cwd — it just resolves the project's venv from the nearest `pyproject.toml`.
+argument where the command supports it.
 
-## Preferred invocation: `scripts/run_agentic.py`
+## Preferred invocation: Direct agentic command
 
-This skill bundles `scripts/run_agentic.py`, a thin wrapper around
-`uv run agentic <...>` that captures stdout, stderr, and the exit code
-**separately** and returns them as a single JSON object — instead of
-merged, hard-to-parse shell output. Prefer this over calling `uv run
-agentic` directly whenever you plan to inspect the result programmatically
-(which is almost always, in an agent context).
+Invoke the agentic CLI directly and capture the output programmatically
+when needed (which is almost always, in an agent context).
 
 ```bash
-python scripts/run_agentic.py -- config get telegram.bot_token
-python scripts/run_agentic.py -- config schema
-python scripts/run_agentic.py --cwd /path/to/project -- agents list
-python scripts/run_agentic.py --timeout 5 -- config set telegram.bot_token --set telegram.bot_token=123:ABC
+agentic config get telegram.bot_token
+agentic config schema
+agentic --cwd /path/to/project agents list
+agentic --timeout 5 config set telegram.bot_token --set telegram.bot_token=123:ABC
 ```
 
-Output shape (always JSON on stdout, one line unless `--pretty` is passed):
-
-```json
-{
-  "command": ["uv", "run", "agentic", "config", "get", "telegram.bot_token"],
-  "cwd": "/path/to/project",
-  "exit_code": 0,
-  "success": true,
-  "stdout": "\"123:ABC\"\n",
-  "stderr": "",
-  "stdout_json": "123:ABC",
-  "timed_out": false
-}
-```
+Output shape varies by command:
+- JSON commands (config get, config schema, agents list) print JSON to stdout
+- Text commands (config set, message add) print plain text to stdout
+- The run command runs a blocking server and should be invoked in background
+  when needed programmatically
 
 Notes on using it:
-- `--` separates wrapper flags from the `agentic` subcommand — always
-  include it if the wrapped command has its own `-`/`--` flags (e.g.
-  `--set`, `-t`), to avoid argparse misparsing them as wrapper flags.
-- `success` is `true` iff exit code was `0` — check this before trusting
-  `stdout_json`.
-- `stdout_json` is `null` whenever stdout wasn't valid JSON (e.g. plain-text
-  confirmation messages) — fall back to reading `stdout` as text in that
-  case.
-- Default `--timeout` is 30s. **Never call `agentic run` through this
-  wrapper without a short explicit `--timeout`** — it's a blocking server
-  command and will otherwise hang until the wrapper's timeout kills it.
-  Run `agentic run` directly in the background instead if you actually need
-  the server up.
+- `success` can be determined by checking exit code (0 = success)
+- JSON output can be parsed directly from stdout
+- Default behavior for blocking commands like `agentic run` will block until
+  interrupted — use background processes or subprocesses with timeouts when
+  needed programmatically
 - `--cwd` lets you target a project root without a separate `cd`, useful
-  when running multiple `agentic` calls against different projects in the
+  when running multiple agentic calls against different projects in the
   same agent session.
-- Exit code of the wrapper mirrors the wrapped command's exit code (127 if
-  `uv` itself isn't found, 124 on timeout), so shell-level `$?` checks work
-  too, in addition to parsing the JSON body.
+- Exit code follows standard conventions (0 = success, non-zero = failure)
 
 ## Command reference
 
 ### Discover what's available
 
 ```bash
-uv run agentic mcp list
+agentic mcp list
 ```
 Prints every command and subcommand the CLI exposes. Run this first if
 you're unsure a command still exists or want the full current surface area
@@ -107,17 +77,17 @@ you're unsure a command still exists or want the full current surface area
 ### Run the bot server
 
 ```bash
-uv run agentic run
+agentic run
 ```
 Launches `bot_app.py` in the foreground and blocks until interrupted
-(Ctrl+C). Only run this in the background (e.g. `uv run agentic run &` or a
+(Ctrl+C). Only run this in the background (e.g. `agentic run &` or a
 subprocess with output capture) if you need the shell back — otherwise it
 will hang the calling process.
 
 ### Send a message
 
 ```bash
-uv run agentic message add "Hello, this is a test message"
+agentic message add "Hello, this is a test message"
 ```
 Sends TEXT through the bot. Always quote the message text so shell
 word-splitting doesn't break multi-word messages.
@@ -125,24 +95,26 @@ word-splitting doesn't break multi-word messages.
 ### Adding a new agent (no dedicated `agents add` command exists)
 
 The CLI has `agents list` and `agents run`, but **no `agents add` /
-`agents create` command** as of this version — check `uv run agentic agents
+`agents create` command** as of this version — check `agentic agents
 --help` to confirm that's still true before assuming otherwise. To add a
 new agent, you go through `config set` against the `agents` array instead:
 
 1. **Check the schema first** so the new entry has the right shape:
    ```bash
-   python scripts/run_agentic.py -- config schema
+   agentic config schema
    ```
+
 2. **See the current agents array** to know the next index and existing structure:
    ```bash
-   python scripts/run_agentic.py -- config get "agents"
+   agentic config get "agents"
    ```
+
 3. **Append the new agent.** `jsonpath_ng`'s `.update()` replaces a matched
    node rather than appending to an array, so target the **new index
    directly** (current length of the array) rather than trying to "push":
    ```bash
    # if there are currently 2 agents (indices 0,1), target index 2
-   python scripts/run_agentic.py -- config set "agents.[2]" \
+   agentic config set "agents.[2]" \
      --set name=image_processor \
      --set model=gpt-4-vision \
      --set tools='["image_analyze","image_resize"]'
@@ -155,9 +127,10 @@ new agent, you go through `config set` against the `agents` array instead:
    to the user rather than silently writing a malformed entry — check the
    printed output against the schema before treating the write as
    successful.
+
 4. **Verify the write:**
    ```bash
-   python scripts/run_agentic.py -- config get "agents.[2]"
+   agentic config get "agents.[2]"
    ```
    And remember: `config set` only prints the merged result — confirm
    separately whether the CLI actually persists to `file`, or whether
@@ -166,7 +139,7 @@ new agent, you go through `config set` against the `agents` array instead:
 ### List/read config values
 
 ```bash
-uv run agentic config get <key_path> [file]
+agentic config get <key_path> [file]
 ```
 - `key_path` is a **JSONPath** expression (via `jsonpath_ng`), e.g.
   `telegram.bot_token`, `agents.[0].name`, `agents[*].model`.
@@ -177,14 +150,14 @@ uv run agentic config get <key_path> [file]
 
 Examples:
 ```bash
-uv run agentic config get telegram.bot_token
-uv run agentic config get "agents[*].name" custom_config.json
+agentic config get telegram.bot_token
+agentic config get "agents[*].name" custom_config.json
 ```
 
 ### Write config values
 
 ```bash
-uv run agentic config set <key_path> --set key=value [--set key2=value2 ...] [file]
+agentic config set <key_path> --set key=value [--set key2=value2 ...] [file]
 ```
 - `key_path` is the JSONPath target to update.
 - `--set` takes repeatable `key=value` pairs; all provided pairs are merged
@@ -197,8 +170,8 @@ uv run agentic config set <key_path> --set key=value [--set key2=value2 ...] [fi
 
 Example:
 ```bash
-uv run agentic config set telegram.bot_token --set telegram.bot_token=123:ABC
-uv run agentic config set "agents.[0]" --set name=Assistant --set model=gpt-4
+agentic config set telegram.bot_token --set telegram.bot_token=123:ABC
+agentic config set "agents.[0]" --set name=Assistant --set model=gpt-4
 ```
 
 ⚠️ This command does **not** write the result back to `file` — it only
@@ -209,7 +182,7 @@ yourself) rather than assuming the file changed after running `set`.
 ### Inspect the config schema
 
 ```bash
-uv run agentic config schema
+agentic config schema
 ```
 Prints the full JSON Schema for `AgenticConfig`. Run this before writing to
 an unfamiliar config file, or when a `config set`/`get` call errors with a
@@ -219,7 +192,7 @@ field names, types, and structure expected.
 ### List agents
 
 ```bash
-uv run agentic agents list
+agentic agents list
 ```
 Reads `agentic.json` in the cwd and prints each agent's name, model, and
 tool count. Fails clearly if the file is missing or invalid JSON.
@@ -227,8 +200,8 @@ tool count. Fails clearly if the file is missing or invalid JSON.
 ### Run an agent
 
 ```bash
-uv run agentic agents run <agent_name> [--task "..."] 
-uv run agentic agents run <agent_name> -t "..."
+agentic agents run <agent_name> [--task "..."] 
+agentic agents run <agent_name> -t "..."
 ```
 - Looks up `agent_name` in `agentic.json`'s `agents` list.
 - With `--task`/`-t`, runs that task; without it, starts interactive mode.
@@ -270,10 +243,10 @@ guessing at flags or relying solely on this document — the CLI's docstrings
 are the source of truth and may have changed since this skill was written.
 
 ```bash
-uv run agentic --help
-uv run agentic config --help
-uv run agentic config set --help
-uv run agentic agents run --help
+agentic --help
+agentic config --help
+agentic config set --help
+agentic agents run --help
 ```
 
 Reach for `--help` in these situations:
@@ -293,24 +266,23 @@ error — work through it methodically before asking the user to intervene.
 1. **Read the actual error text and exit code**, not just "it failed."
    Click and this CLI raise distinct, informative errors — capture stderr
    and stdout separately if possible so you're not mixing usage errors with
-   program output. `scripts/run_agentic.py` does this automatically; prefer
-   it over raw shell calls when debugging a failure.
+   program output.
 
 2. **Match the error to a likely cause and try one targeted fix**, then
    re-run:
 
    | Error looks like | Likely cause | Try |
    |---|---|---|
-   | `Error: No such command` | Typo, or subcommand moved/renamed | `uv run agentic --help` / `uv run agentic <group> --help` to see current command tree |
-   | `Error: No such option` / `Got unexpected extra argument` | Wrong flag name or argument order | `uv run agentic <command> --help` to check exact signature, fix and retry |
+   | `Error: No such command` | Typo, or subcommand moved/renamed | `agentic --help` / `agentic <group> --help` to see current command tree |
+   | `Error: No such option` / `Got unexpected extra argument` | Wrong flag name or argument order | `agentic <command> --help` to check exact signature, fix and retry |
    | `Error: Missing argument` / `Missing option` | Required arg/option omitted | Check `--help`, supply the missing piece |
    | `FileNotFoundError` / config file not found | Wrong working directory, or file path/name mismatch | `pwd` and `ls` to locate `agentic.json`; retry with an explicit file path argument |
    | `json.JSONDecodeError` | Config file has invalid JSON (trailing comma, wrong quotes, etc.) | Open and inspect the file; if you're the one who last wrote it, check for shell-quoting issues before assuming the file itself is hand-edited garbage |
-   | Pydantic validation error from `AgenticConfig` | Config doesn't match expected schema | Run `uv run agentic config schema` and compare field names/types against the file |
-   | JSONPath match is empty (command succeeds, no output) | `key_path` doesn't match anything in the config | Run `uv run agentic config get "$"` (or the closest valid root path) to see the whole structure, then correct the path |
-   | Command hangs / doesn't return | You ran `uv run agentic run` (a blocking server) inline | Re-run in the background or in a subprocess with a timeout, don't block the session on it |
-   | `command not found: agentic` (running bare, without `uv run`) | Not installed globally / no active venv | Use `uv run agentic ...` instead of a bare `agentic ...` |
-   | `uv run agentic` itself fails to resolve the command | Deps not synced, or wrong project root | `uv sync`, confirm you're in the directory with `pyproject.toml`, then retry |
+   | Pydantic validation error from `AgenticConfig` | Config doesn't match expected schema | Run `agentic config schema` and compare field names/types against the file |
+   | JSONPath match is empty (command succeeds, no output) | `key_path` doesn't match anything in the config | Run `agentic config get "$"` (or the closest valid root path) to see the whole structure, then correct the path |
+   | Command hangs / doesn't return | You ran `agentic run` (a blocking server) inline | Re-run in the background or in a subprocess with a timeout, don't block the session on it |
+   | `command not found: agentic` | Not installed globally / no active venv | Use `agentic` directly if in PATH, or use full path to executable |
+   | `agentic` itself fails to resolve the command | Deps not installed, or wrong project root | Ensure dependencies are installed, confirm you're in the directory with `pyproject.toml`, then retry |
 
 3. **Retry once with the fix applied.** If the second attempt still fails
    with the *same* error after checking `--help` and the schema, stop
@@ -326,10 +298,10 @@ error — work through it methodically before asking the user to intervene.
 
 ## Practical workflow tips
 
-- **Always `mcp list` when unsure.** It's cheap and gives ground truth on
+- **Always `agentic mcp list` when unsure.** It's cheap and gives ground truth on
   available commands instead of relying on this document if the CLI has
   since changed.
-- **Check the schema before blind writes.** `uv run agentic config schema` avoids
+- **Check the schema before blind writes.** `agentic config schema` avoids
   trial-and-error when a `config set` call fails validation.
 - **Quote JSONPath expressions with brackets.** Paths like `agents[*].name`
   or `agents.[0].name` contain characters (`[`, `]`, `*`) that some shells

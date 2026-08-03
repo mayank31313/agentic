@@ -112,9 +112,6 @@ commentary outside of them."""
 # Agent
 # --------------------------------------------------------------------------
 
-os.environ['OPENAI_API_BASE'] = 'https://integrate.api.nvidia.com/v1'
-os.environ['OPENAI_API_KEY'] = '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'
-
 
 class DefectFixPromptAgent:
     """Wraps Kimi K2.6 (via NVIDIA NIM + LangChain OpenAI wrapper) to turn

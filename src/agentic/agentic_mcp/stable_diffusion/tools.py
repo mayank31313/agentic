@@ -1,17 +1,18 @@
 import asyncio
 import logging
+import os
 from pathlib import Path
-from typing import Annotated, List, Any, Optional
+from typing import List, Any, Optional
 
 import httpx
 
-from cndi.annotations import Autowired, Component
+from cndi.annotations import Component
 from cndi.env import getContextEnvironment
-from fastmcp.tools import tool
+from fastmcp.tools import tool, ToolResult
 from httpx import ConnectError
+from mcp.types import TextContent
 
 from pydantic import BaseModel, Field
-import json
 
 from agentic.app.agents import get_image_agent
 from agentic.app.constants import EXTERNAL_API_LOCALAI_BASE_URL_PROP, EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP, \
@@ -47,7 +48,7 @@ class ImageGenerationRequest(BaseModel):
         ),
     )
     temperature: float = Field(
-        default=0.7,
+        default=2.5,
         ge=0.0,
         le=3.0,
         description=(
@@ -97,8 +98,8 @@ class ModelOutput(BaseModel):
 @Component
 class LocalAiApi:
     def __init__(self, url=None, image_model=None):
-        self.url = url or getContextEnvironment(EXTERNAL_API_LOCALAI_BASE_URL_PROP)
-        self.image_model = image_model or getContextEnvironment(EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP)
+        self.url = url or getContextEnvironment(EXTERNAL_API_LOCALAI_BASE_URL_PROP, os.getenv("AGENTIC_BOT_LOCAL_API_BASE_URL"))
+        self.image_model = image_model or getContextEnvironment(EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP, os.getenv("AGENTIC_BOT_LOCAL_API_IMAGE_MODEL"))
         self.request_timeout = getContextEnvironment(EXTERNAL_API_LOCALAI_REQUEST_TIMEOUT_PROP, castFunc=int, defaultValue=1200)
 
     async def wait_for_task_completion(self, task_id: str, poll_interval: float = 2.0):
@@ -261,28 +262,22 @@ def analyse_image(image_generation_request: ImageGenerationRequest, image_url):
     response = image_agent.invoke(lc_messages)
     return response
 
+
 def get_image_tools(localai_api: LocalAiApi):
-    @tool
-    async def generate_image(image_generation_request: ImageGenerationRequest) -> list:
+    @tool(timeout=1200)
+    async def generate_image(image_generation_request: ImageGenerationRequest) -> ToolResult:
         """Call this tool when user request to generate image."""
         try:
             response_object = (await localai_api.generate_image_as_task(image_generation_request)).get('output')
             data = response_object['data']
 
-            content_blocks = [{"type": "text", "text": f"Image generated with prompt: '{image_generation_request.prompt}'"},]
+            content_blocks = [TextContent(text=f"Image generation completed. Generated {len(data)} image(s).", type='text')]
             for i, d in enumerate(data):
                 found = False
                 for _ in range(3):
                     try:
-                        image_bytes = await fetch_image_from_url(d["url"])
-                        saved_path = f"images/{response_object['id']}-{i}.png"
-                        await save_image_bytes_async(image_bytes, saved_path)
-                        content_blocks.append({
-                            "type": "image",
-                            "source_type": "text",
-                            "data": saved_path,
-                            "mime_type": "image/png",
-                        })
+                        url = d["url"]
+                        content_blocks.append(dict(type='image_url', image_url=dict(url=url)))
                         found = True
                         break
                     except ConnectError as ce:
@@ -291,8 +286,8 @@ def get_image_tools(localai_api: LocalAiApi):
                 if not found:
                     raise Exception(f"Could not fetch image from {d['url']}")
 
-            return content_blocks
+            return ToolResult(content=content_blocks)
         except Exception as e:
-            return [dict(error=f"Image generation failed: {e}")]
+            return ToolResult(content=[TextContent(text=f"Image generation failed: {e}", type='text')])
 
     return [generate_image]

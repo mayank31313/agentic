@@ -25,6 +25,10 @@ dependencies = [
     "pytest-repeat>=0.9.4",
     "python-telegram-bot>=22.8",
     "tinydb>=4.8.2",
+    "google-api-python-client>=2.198.0",
+    "google-auth-httplib2>=0.4.0",
+    "google-auth-oauthlib>=1.4.0",
+    "proxmoxer>=2.3.0",
 ]
 
 [project.scripts]

@@ -1,44 +1,56 @@
-import json
 import logging
 import os.path
-from typing import List, Tuple, Dict, Optional, Any
-
-from cndi.annotations import Bean
-from cndi.env import getContextEnvironment
+from typing import List, Tuple, Dict, Optional, Any, Union
 from pydantic import BaseModel, Field
 
-from app.constants import AGENTIC_FILE_NAME_PROP
+class FromEnv(BaseModel):
+    env_key: str = Field(description="Environment variable key to fetch the value from")
+
+    def resolve(self) -> str:
+        """Resolve the value from the environment variable."""
+        env_value = os.getenv(self.env_key)
+        if env_value is None:
+            raise ValueError(f"Environment variable '{self.env_key}' is not set.")
+        return env_value
+
+    def __str__(self):
+        return self.resolve()
 
 class ToolConfig(BaseModel):
     name: str = Field(description='Tool name')
     require_approval: bool = Field(description='If tool needs human in loop for approval')
     approval_text: Optional[str] = Field(default=None, description="Text to show when requesting approval")
+class SkillsConfig(BaseModel):
+    path: str
+    virtual_path: str = Field(description="Virtual path for the skill, if different from the name")
+
+class ModelConfig(BaseModel):
+    model: str = Field(description="Model name with provider, e.g., openai:gemma-4-e2b-it")
+    model_id: str = Field(description="Model ID for the model, e.g., gemma-4-e2b-it")
+    base_url: str = Field(
+        default_factory=lambda: os.getenv("OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1")
+    )
+    api_key: Union[str, FromEnv] = Field(
+        default_factory=lambda: FromEnv(env_key="OPENAI_API_KEY"), union_mode='left_to_right'
+    )
+    context_window: int = Field(default=128000)
 
 class AgentConfig(BaseModel):
     system_prompt_path: str
     workspace_dir: str
     name: str
-    model: str
-    context_window: int = Field(default=128000)
+    model_id: str
     tools: Optional[Tuple[ToolConfig, ...]] = Field(default_factory=tuple)
     denied_tools: Optional[Tuple[str, ...]] = Field(default_factory=tuple)
-    base_url: str = Field(
-        default_factory=lambda: os.getenv("OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1")
-    )
-    api_key: str = Field(
-        default_factory=lambda: os.getenv("OPENAI_API_KEY")
-    )
-
-class Skillsconfig(BaseModel):
-    name: str
-    path: str
-
+    skills: Optional[List[SkillsConfig]] = Field(default_factory=tuple, description="List of skills path")
+    agent_model_config: Optional[ModelConfig] = Field(default=None, description="Model configuration for the agent")
 
 class AgenticConfig(BaseModel):
     workspace: str
     agents: list[AgentConfig] = Field(description="List of agents")
     mcpServers: Dict[str, dict] = Field(description="MCP Server configuration")
-    skills: Optional[List[Skillsconfig]] = Field(default_factory=list, description="List of skills")
+    models: list[ModelConfig] = Field(description="List of models")
+
 
     def get_agent(self, name: str) -> Optional[AgentConfig]:
         for agent in self.agents:
@@ -48,47 +60,6 @@ class AgenticConfig(BaseModel):
 
 
 logger = logging.getLogger(__name__)
-
-@Bean()
-def getAgenticConfig() -> AgenticConfig:
-    filename = getContextEnvironment(AGENTIC_FILE_NAME_PROP)
-    try:
-        if os.path.exists(filename):
-            with open(filename, "r") as config_json:
-                return AgenticConfig.model_validate(json.load(config_json))
-    except Exception as e:
-        pass
-    with open(filename, "w") as config_json:
-        agentic = AgenticConfig(
-            workspace="./workspace",
-            agents=[
-                AgentConfig(
-                    system_prompt_path="AGENTS.md",
-                    workspace_dir="./workspace",
-                    name="main",
-                    model="openai:nvidia/nemotron-3-super-120b-a12b",
-                    base_url="https://integrate.api.nvidia.com/v1",
-                    tools=tuple([ToolConfig(name='run_shell_command', require_approval=True, approval_text="This tool needs approval to run"),
-                                 ToolConfig(name='generate_image', require_approval=False),
-                                 ToolConfig(name='swamp_sub_agent', require_approval=False)]),
-                    denied_tools=tuple([])
-                )
-            ],
-            mcpServers={
-                "alice_mcps": {
-                    "url": "http://localhost:8811/sse",
-                    "transport": "sse",
-                    "headers": {
-                        "Authorization": "Bearer 6s4uic0iosrjefufic7hiiuv6jp9qtm0a6fk5qg4x7565nng59"
-                    }
-                }
-            }
-        )
-
-        json.dump(agentic.model_dump(mode="json"), fp=config_json, indent=4)
-
-    return agentic
-
 
 class UpdateJsonConfigRequest(BaseModel):
     key_path: str = Field(

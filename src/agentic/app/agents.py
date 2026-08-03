@@ -1,4 +1,4 @@
-
+import logging
 import os
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 
-from app.config import AgentConfig, ToolConfig
+from agentic.app.config import AgentConfig, ToolConfig
 
 
 def read_agents_md(path: str) -> str:
@@ -40,9 +40,6 @@ def read_agents_md(path: str) -> str:
     # 4) Last resort: decode with replacement to avoid crashing
     return raw.decode('utf-8', errors='replace')
 
-os.environ['OPENAI_API_BASE'] = 'https://integrate.api.nvidia.com/v1'
-os.environ['OPENAI_API_KEY'] = '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'
-
 def get_image_agent():
     # usage
     client = ChatOpenAI(
@@ -55,6 +52,8 @@ def get_image_agent():
                 )
 
     return client
+
+logger = logging.getLogger(__name__)
 
 def get_main_agent(agent_config: AgentConfig,
                    tools: list[BaseTool] = None,
@@ -70,27 +69,34 @@ def get_main_agent(agent_config: AgentConfig,
 
     interrupt_tool_on = {x.name: InterruptOnConfig(allowed_decisions=["approve", "reject"], description=x.approval_text) for x in tools_need_approval}
 
+    model_config = agent_config.agent_model_config
     model = init_chat_model(
-        model=agent_config.model,
-        base_url=agent_config.base_url
+        model=model_config.model,
+        base_url=model_config.base_url,
+        api_key=model_config.api_key if type(model_config.api_key) is str else model_config.api_key.resolve()
     )
+
+    routes = {"/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),}
+    agent_skill_paths = []
+    for skill_config in agent_config.skills:
+        logger.info(f"Adding skill route for {skill_config.virtual_path} at path {skill_config.path}")
+        routes[skill_config.virtual_path] = FilesystemBackend(root_dir=skill_config.path, virtual_mode=True)
+        agent_skill_paths.append(skill_config.virtual_path)
+
 
     agent = create_deep_agent(
         model=model,
         backend=CompositeBackend(
             default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
             routes={
-                "/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),
-                "/skills/": LocalShellBackend(root_dir="./skills", virtual_mode=True, env={"PATH": "/usr/bin:/bin"}),
-            },
+                "/skills/": FilesystemBackend(root_dir="src/skills", virtual_mode=True)
+            }
         ),
-
-        skills=['/skills/'],
+        skills=agent_skill_paths,
         system_prompt=system_prompt,
         tools=tools or [],
         middleware=middlewares,
         checkpointer=checkpointer,
         interrupt_on=interrupt_tool_on,
     )
-
     return agent
