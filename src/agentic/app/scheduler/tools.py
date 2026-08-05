@@ -2,6 +2,7 @@ import os
 from typing import Optional, List
 from uuid import UUID, uuid4
 
+from cndi.annotations import Autowired
 from cndi.annotations.events import EventBus
 from cndi.env import getContextEnvironment
 from langchain_core.tools import tool
@@ -10,6 +11,7 @@ import logging
 
 from tinydb import TinyDB, Query
 
+from agentic.app.channels.telegram import ToolsRegistry
 from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID
 
 logger = logging.getLogger(__name__)
@@ -142,3 +144,9 @@ def get_cron_tools(event_bus: EventBus):
 
 
     return [create_cron_tool, list_cron_tool, update_cron_tool, delete_cron_tool]
+
+@Autowired()
+def register_cron_tools(tools_registry: ToolsRegistry, event_bus: EventBus):
+    cron_tools = get_cron_tools(event_bus)
+    for tool in cron_tools:
+        tools_registry.register_tool(tool.name, tool)

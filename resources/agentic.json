@@ -1,0 +1,60 @@
+{
+    "workspace": "./workspace",
+    "models": [
+        {
+            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
+            "model_id": "custom-nemotron-3-super-120b-a12b",
+            "context_window": 128000,
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "api_key": {
+                "env_key": "NVIDIA_API_KEY"
+            }
+        },
+        {
+            "model": "openai:gemma-4-e2b-it",
+            "model_id": "custom-gemma-4-e2b-it",
+            "context_window": 128000,
+            "base_url": "http://localhost:8080/v1",
+            "api_key": {
+                "env_key": "NVIDIA_API_KEY"
+            }
+        }
+    ],
+    "agents": [
+        {
+            "system_prompt_path": "AGENTS.md",
+            "workspace_dir": "./workspace",
+            "name": "main",
+            "model_id": "custom-gemma-4-e2b-it",
+            "skills": [{
+                "virtual_path": "/skills/",
+                "path": "./src/skills/"
+            }],
+            "denied_tools": ["mcp-activate-profile", "mcp-add", "mcp-config-set",
+                "mcp-create-profile", "mcp-exec", "mcp-find", "mcp-remove", "execute_code"],
+            "tools": [
+                {
+                    "name": "run_shell_command",
+                    "require_approval": true,
+                    "approval_text": "This tool needs approval to run"
+                },
+                {
+                    "name": "generate_image",
+                    "require_approval": false,
+                    "approval_text": null
+                },
+                {
+                    "name": "swamp_sub_agent",
+                    "require_approval": false,
+                    "approval_text": null
+                }
+            ]
+        }
+    ],
+    "mcpServers": {
+        "agentic_mcp": {
+            "url": "http://localhost:8082/mcp",
+            "transport": "http"
+        }
+    }
+}

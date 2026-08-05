@@ -1,10 +1,13 @@
 import os
 
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_REMOVED
+from apscheduler.executors.pool import ProcessPoolExecutor
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from cndi.annotations import Bean
 from cndi.annotations.events import OnEvent
+from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 from telegram import Bot
@@ -34,8 +37,6 @@ def execute_task(cron: CronSchedule, bot: Bot):
 @OnEvent(CRON_UPDATE_EVENT)
 def update_crons(action: str, cron: CronSchedule, scheduler: BackgroundScheduler, bot: Bot):
     try:
-        logger.info(type(cron))
-        logger.info(f"Cron Update Called: {action} : {cron}")
         job_id = str(cron.id)
         job = scheduler.get_job(job_id)
         if job:
@@ -51,9 +52,17 @@ def job_listener(event):
 
 @Bean()
 def getBankgroundScheduler(bot: Bot) -> BackgroundScheduler:
+    time_zone = getContextEnvironment("cron.scheduler.timezone", "Europe/London")
+
+    executors = {
+        'default': {'type': 'threadpool', 'max_workers': 20},
+        'processpool': ProcessPoolExecutor(max_workers=5)
+    }
+
     with TinyDB(os.environ.get('CRON_SCHEDULE_FILENAME', "cron_schedules.json")) as db:
         crons = [CronSchedule.model_validate(row) for row in db.all()]
         scheduler = BackgroundScheduler()
+        scheduler.configure(executors=executors, timezone=time_zone)
         scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_EXECUTED | EVENT_JOB_REMOVED )
         for cron in crons:
             scheduler.add_job(execute_task, CronTrigger.from_crontab(cron.cron_expression), kwargs=dict(cron=cron, bot=bot))
