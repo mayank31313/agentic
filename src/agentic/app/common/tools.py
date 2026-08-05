@@ -1,8 +1,10 @@
 import asyncio
+import os
 import subprocess
 from typing import List
 
 from cndi.annotations import Autowired
+from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
 from langchain_core.tools import tool, BaseTool
@@ -42,7 +44,8 @@ def set_common_tools(tool_registry: ToolsRegistry,
                      agentic_config: AgenticConfig):
     tavily_search = TavilySearch(
         max_results=5,
-        topic="general"
+        topic="general",
+        tavily_api_key =  getContextEnvironment("app.tavily.api_key")
     )
 
     @tool

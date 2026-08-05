@@ -8,20 +8,14 @@ rcn:
 secrets:
   provider:
     vault:
-      addr: https://vault.internal.iorcloud.co.in/
-      enable: false
+      enable: true
+      addr: "https://vault.internal.iorcloud.co.in/"
 app:
-  agentic:
-    config_path: resources/agentic.json
   channels:
     telegram:
-      token: 8112528825:AAEvS6LdZGw3Wig3shL8DglQSawDsfPMq4k
-      default_chat_id: 8705816265
-
-
-  externals:
-    localai:
-      name: localai
-      base_url: 'http://192.168.47.109:9000/v1'
-      default_image_model: "realistic-vision"
-      config_file:
+      token: "vault://secrets/iorcloud agentic bot_token"
+      default_chat_id: "vault://secrets/iorcloud agentic chat_id"
+  tavily:
+    api_key: "vault://secrets/iorcloud agentic tavily_api_key"
+  agentic:
+    config_path: resources/agentic.json

@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "apscheduler>=3.11.2",
     "click>=8.4.2",
-    "cndi==2.7.7",
+    "cndi==2.7.9",
     "deepagents>=0.6.12",
     "elasticsearch>=8.0.0",
     "fastmcp>=3.4.4",

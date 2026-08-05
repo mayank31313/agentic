@@ -1,6 +1,7 @@
 from typing import List
 
 from cndi.env import getContextEnvironment
+from cndi.secrets.vault import VaultSecretProvider
 from langchain.agents.middleware import AgentMiddleware
 import logging
 from cndi.annotations import Component, Bean
@@ -64,7 +65,7 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text("✅ Conversation memory cleared!")
 
 @Bean()
-def get_telegram_application() -> Application:
+def get_telegram_application(vault_provider: VaultSecretProvider) -> Application:
     telegram_bot_token = getContextEnvironment(TELEGRAM_BOT_TOKEN_PROP)
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(telegram_bot_token).build()

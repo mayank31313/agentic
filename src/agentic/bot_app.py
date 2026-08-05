@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 from cndi.annotations.events import EventBus
-from cndi.env import getContextEnvironment
+from cndi.env import getContextEnvironment, VARS, getContextEnvironments
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.types import Command, Interrupt
 from pydantic import BaseModel, Field
@@ -29,7 +29,6 @@ from telegram.constants import ParseMode
 from agentic.app.agents import get_main_agent
 from agentic.app.config import AgentConfig, AgenticConfig, ToolConfig, SkillsConfig
 from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, AGENTIC_FILE_NAME_PROP
-from agentic.app.memory_compaction import create_memory_compaction_agent
 from agentic.app.memory_retriever import get_memory_retriever
 from agentic.app.reactions import add_reaction, remove_reaction
 import json
@@ -40,6 +39,7 @@ logging.basicConfig(
 )
 # set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger('cndi.secrets.vault').setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -407,12 +407,6 @@ def main(application: Application,
          agentic_bot: AgenticBot):
     agentic_bot.initialise_agent()
 
-    # data = asyncio.run(localai.generate_image_to_image_as_task(ImageGenerationRequest(
-    #     prompt="Fix the finger in the image to make it look natural and realistic.",
-    #     negative_prompt="blurry, low quality, distorted, unnatural, unrealistic, deformed, mutated, extra fingers, missing fingers",
-    #     init_image_path="images/3f6c7685-6052-4604-8246-c66ee27a7266-0.png"
-    # )))
-    # logger.info(f"Image generation response: {data}")
     async def inbound_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stream response and update emoji reactions per token."""
         chat_id = update.effective_chat.id
