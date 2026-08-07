@@ -11,7 +11,7 @@ import logging
 
 from tinydb import TinyDB, Query
 
-from agentic.app.channels.telegram import ToolsRegistry
+from agentic.app.common.tools import ToolsRegistry
 from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID
 
 logger = logging.getLogger(__name__)
@@ -23,17 +23,8 @@ class SubAgentConfig(BaseModel):
     agent_name: str = Field(
         ..., description="Registered subagent type/name, e.g. 'research_agent', 'support_agent'."
     )
-    model: Optional[str] = Field(
-        default="openai:nvidia/nemotron-3-super-120b-a12b",
-        description="Model override, e.g. 'anthropic:claude-sonnet-4-6'. If None, the agent's default is used."
-    )
-
-    tools: list[str] = Field(default_factory=list, description="Names of tools to attach, resolved via a tool registry at build time.")
+    tools: list[str] = Field(default_factory=tuple, description="List tools required to execute the task. Use list_available_tools to see available tools.")
     system_prompt: str = Field(description="Override system prompt. If None, agent's default is used.")
-    extra_config: dict = Field(
-        default_factory=dict,
-        description="Free-form config bag for agent-specific kwargs, kept generic on purpose."
-    )
 
     share_session: bool = Field(
         default=False,
@@ -53,18 +44,18 @@ class Delivery(BaseModel):
     channel: str = Field(default="telegram", description="name of the channel")
     mode: str = Field(default="announce", description="mode of communication")
 
-class CronScheduleAgent(BaseModel):
+
+class CronSettings(BaseModel):
     task: str = Field(..., description="Task user has given to complete")
     cron_expression: str = Field(..., description="The Cron expression string (e.g., '0 9 * * *' for every day at 9 AM).")
     name: str = Field(description="The name of the schedule, if user does not specify agent to use a meaningful name.")
-    subagent: SubAgentConfig = Field(
-        ..., description="Config describing which subagent to invoke and how to build it — never a live instance."
-    )
 
-class CronSchedule(CronScheduleAgent):
+class CronSchedule(CronSettings):
         id: UUID = Field(default_factory=uuid4, description="Unique identifier for the cron job.")
         delivery: Delivery = Field(description="Delivery config to use for response")
-
+        subagent: SubAgentConfig = Field(
+            ..., description="Config describing which subagent to invoke and how to build it — never a live instance."
+        )
 def get_cron_tools(event_bus: EventBus):
     @tool
     def delete_cron_tool(name: str) -> str:
@@ -85,13 +76,13 @@ def get_cron_tools(event_bus: EventBus):
 
 
     @tool
-    def create_cron_tool(cron_settings: CronScheduleAgent) -> str:
+    def create_cron_tool(cron_settings: CronSettings, sub_agent_config: SubAgentConfig) -> str:
         """
         Create a cron job and schedule at the specified time. The cron_settings should be a CronScheduleAgent object containing the task and cron_expression.
         """
         try:
             with TinyDB(os.environ.get('CRON_SCHEDULE_FILENAME', "cron_schedules.json")) as db:
-                cron = CronSchedule(**cron_settings.model_dump(mode="json"), delivery=Delivery(to=[getContextEnvironment(TELEGRAM_BOT_DEFAULT_CHAT_ID)]))
+                cron = CronSchedule(**cron_settings.model_dump(mode="json"), subagent=sub_agent_config, delivery=Delivery(to=[getContextEnvironment(TELEGRAM_BOT_DEFAULT_CHAT_ID)]))
                 db.insert(cron.model_dump(mode="json"))
 
                 event_bus.publish(CRON_UPDATE_EVENT, data=dict(
@@ -120,7 +111,7 @@ def get_cron_tools(event_bus: EventBus):
             return f"Error: {str(e)}"
 
     @tool
-    def update_cron_tool(name: str, cron_settings: CronScheduleAgent) -> str:
+    def update_cron_tool(name: str, cron_settings: CronSettings, sub_agent_config: SubAgentConfig) -> str:
         """ Update existing cron job with new settings. The cron_settings should be a CronScheduleAgent object containing the name, task and cron_expression. """
         try:
             with TinyDB(os.environ.get('CRON_SCHEDULE_FILENAME', "cron_schedules.json")) as db:
@@ -129,7 +120,7 @@ def get_cron_tools(event_bus: EventBus):
                 schedule = CronSchedule.model_validate(result) if result else None
 
                 if schedule:
-                    cron = CronSchedule(**cron_settings.model_dump(mode="json"), id=schedule.id, delivery=schedule.delivery)
+                    cron = CronSchedule(**cron_settings.model_dump(mode="json"), subagent=sub_agent_config, id=schedule.id, delivery=schedule.delivery)
                     db.update(cron.model_dump(mode="json"), Schedule.name == name)
                     event_bus.publish(CRON_UPDATE_EVENT, data=dict(
                         action="UPDATE",

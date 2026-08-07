@@ -51,7 +51,11 @@ class AgenticConfig(BaseModel):
     mcpServers: Dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
 
-
+    def get_model(self, model_id: str) -> Optional[ModelConfig]:
+        for model in self.models:
+            if model.model_id == model_id:
+                return model
+        return None
     def get_agent(self, name: str) -> Optional[AgentConfig]:
         for agent in self.agents:
             if agent.name == name:
@@ -99,3 +103,4 @@ def set_nested(data: dict, path: str, value: Any) -> None:
         current[int(last_key)] = value
     else:
         current[last_key] = value
+

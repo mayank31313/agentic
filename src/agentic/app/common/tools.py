@@ -1,9 +1,9 @@
 import asyncio
-import os
+import logging
 import subprocess
 from typing import List
 
-from cndi.annotations import Autowired
+from cndi.annotations import Autowired, Bean
 from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
@@ -12,14 +12,35 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
-from agentic.app.channels.telegram import ToolsRegistry
+from agentic.app.agents import AgentRegistry
 from agentic.app.config import AgenticConfig
 
+logger = logging.getLogger(__name__)
 
 class SubAgentDetails(BaseModel):
     system_prompt: str = Field(description="System prompt instructions that agent should follow, use role play to make agent behave in certain way")
     task: str = Field(description="Task to swamp subagent")
     context: str = Field(description="Required context and information to complete the task")
+
+class ToolsRegistry:
+    def __init__(self):
+        self.tools = dict()
+
+    def register_tool(self, name, func):
+        self.tools[name] = func
+        logger.debug(f"Tool Registered {name}")
+
+    def get_tools(self, tool_names: List[str]) -> List[BaseTool]:
+        tools = []
+        for tool_name in tool_names:
+            tools.append(self.tools[tool_name])
+
+        return tools
+
+@Bean()
+def getToolsRegistry() -> ToolsRegistry:
+    registry = ToolsRegistry()
+    return registry
 
 @tool
 def run_shell_command(command: str) -> str:
@@ -41,12 +62,31 @@ def run_shell_command(command: str) -> str:
 
 @Autowired()
 def set_common_tools(tool_registry: ToolsRegistry,
-                     agentic_config: AgenticConfig):
+                     agentic_config: AgenticConfig,
+                     agent_registry: AgentRegistry):
     tavily_search = TavilySearch(
         max_results=5,
         topic="general",
         tavily_api_key =  getContextEnvironment("app.tavily.api_key")
     )
+
+    @tool
+    def send_message(message: str) -> str:
+        "Send a message to a specified channel (e.g., Telegram) and return the status."
+        # Here you would implement the actual sending logic using a Telegram bot API
+        # For demonstration, we'll just log the message and return a success status.
+        logger.info(f"Sending message to Telegram chat: {message}")
+        return f"Message sent to Telegram chat"
+
+    @tool
+    def list_registered_agents() -> List[str]:
+        "List all registered agents in the registry"
+        return list(agent_registry.agents.keys())
+
+    @tool
+    def list_available_tools() -> List[str]:
+        "List all available tools in the registry"
+        return list(tool_registry.tools.keys())
 
     @tool
     def swamp_sub_agent(sub_agent_details: SubAgentDetails):
@@ -85,3 +125,6 @@ def set_common_tools(tool_registry: ToolsRegistry,
     tool_registry.register_tool('tavily_search', tavily_search.as_tool())
     tool_registry.register_tool('run_shell_command', run_shell_command)
     tool_registry.register_tool('swamp_sub_agent', swamp_sub_agent)
+    tool_registry.register_tool('list_available_tools', list_available_tools)
+    tool_registry.register_tool('send_message', send_message)
+    tool_registry.register_tool('list_registered_agents', list_registered_agents)
