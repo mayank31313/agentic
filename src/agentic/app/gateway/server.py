@@ -1,11 +1,15 @@
 import asyncio
+import logging
+from importlib.metadata import metadata
 
 from cndi.annotations import Component
 from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
 
 from agentic.app.bot import AgenticBot
 from agentic.app.gateway.adapters import AdapterRegistry, OutboundMessage, InboundMessage
+from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
 
+logger = logging.getLogger(__name__)
 
 @Component
 class Gateway:
@@ -26,8 +30,37 @@ class Gateway:
         adapter = AdapterRegistry.get(channel)
         await adapter.send(message)
 
-def get_adapter_gateway(gateway: Gateway) -> FastAPI:
+def get_adapter_gateway(gateway: Gateway,
+                        connection_manager: WebSocketConnectionManager) -> FastAPI:
     app = FastAPI()
+
+    @app.websocket("/ws/{chat_id}")
+    async def websocket_endpoint(websocket: WebSocket, chat_id: str):
+        await websocket.accept()
+        await connection_manager.connect(chat_id, websocket)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                inbound_message = InboundMessage(
+                    message_id="websocket",
+                    channel="websocket",
+                    chat_id=chat_id,
+                    user_id=chat_id,
+                    text=data
+                )
+                response = await gateway.route_to_backend(inbound_message)
+                outbound_message = OutboundMessage(
+                    chat_id=chat_id,
+                    text="AGENT",
+                    channel="websocket",
+                    metadata=dict(response=response)
+                )
+                await gateway.deliver_to_channel(outbound_message)
+
+        except WebSocketDisconnect:
+            logger.error(f"WebSocket disconnected for chat_id: {chat_id}")
+
+        await connection_manager.disconnect(chat_id)
 
     @app.post("/webhook/{chat_id}/send")
     async def send_message(chat_id: str, message: OutboundMessage):

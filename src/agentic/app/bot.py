@@ -1,15 +1,22 @@
 from cndi.annotations import Component
 from cndi.annotations.events import EventBus
 from langchain_core.messages import ToolMessage, AIMessage
+from langgraph.types import Interrupt, Command
+from pydantic import BaseModel
+from telegram import ReplyKeyboardRemove
+
 from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry, get_main_agent
 from agentic.app.channels.telegram import TelegramToolNotifierMiddleware
+from agentic.app.common import InterruptEvent
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgentConfig
 import logging
 import json
 
 logger = logging.getLogger(__name__)
+
+
 
 @Component
 class AgenticBot:
@@ -59,33 +66,25 @@ class AgenticBot:
                            message_id,
                            channel_metadata: dict):
 
-
         config = {"configurable": {"thread_id": chat_id}}
-#         if message.startswith('$decision'):
-#             _, decision = message.split(' ')
-#             await update.message.reply_text(
-#                 text=f"Decision captured {decision}",
-#                 reply_markup=ReplyKeyboardRemove(),
-#             )
-#             output = await self.agent.ainvoke(Command(resume={"decisions": [dict(type=decision)]}), config=config)
-#         else:
-        output = await self.agent.ainvoke(dict(messages=message), config=config)
-#
-#         if  "__interrupt__" in output:
-#             interrupt_data: list[Interrupt] = output["__interrupt__"]
-#             review_configs = interrupt_data[0].value['review_configs']
-#             action_requests = interrupt_data[0].value['action_requests']
-#
-#             keyboard_buttons = [[f"$decision {decision}"] for decision in review_configs[0]['allowed_decisions']]
-#             logger.info(interrupt_data)
-#             await update.message.reply_text(f"""Tool Called Request Interrupt
-# Tool Name: {action_requests[0]['name']}
-# Args: {action_requests[0]['args']}
-# """)
-#             keyboard = ReplyKeyboardMarkup(keyboard_buttons, one_time_keyboard=True, resize_keyboard=True)
-#
-#             await update.message.reply_text(f"{action_requests[0]['description']}",
-#                                             reply_markup=keyboard, reply_to_message_id=message_id)
+        if message.startswith('$decision'):
+            _, decision = message.split(' ')
+            output = await self.agent.ainvoke(Command(resume={"decisions": [dict(type=decision)]}), config=config)
+        else:
+            output = await self.agent.ainvoke(dict(messages=message), config=config)
+
+        if  "__interrupt__" in output:
+            interrupt_data: list[Interrupt] = output["__interrupt__"]
+            review_configs = interrupt_data[0].value['review_configs']
+            action_requests = interrupt_data[0].value['action_requests']
+
+            keyboard_buttons = [[f"$decision {decision}"] for decision in review_configs[0]['allowed_decisions']]
+            logger.info(interrupt_data)
+
+            return [InterruptEvent(text=f"""Tool Called Request Interrupt
+Tool Name: {action_requests[0]['name']}
+Args: {action_requests[0]['args']}""",interrupt=interrupt_data[0], chat_id=chat_id, message_id=message_id,
+                                   metadata=dict(action_requests=action_requests, review_configs=review_configs, keyboard_buttons=keyboard_buttons)).model_dump(mode="json")]
 
         # Extract and send response
         response_text = list()
