@@ -2,9 +2,9 @@ from cndi.annotations import Component
 from fastapi import WebSocket
 
 from agentic.app.gateway.adapters import (
+    AdapterRegistry,
     ChannelAdapter,
     OutboundMessage,
-    AdapterRegistry,
 )
 
 

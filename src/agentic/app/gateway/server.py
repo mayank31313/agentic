@@ -1,13 +1,13 @@
 import logging
 
 from cndi.annotations import Component
-from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 
 from agentic.app.bot import AgenticBot
 from agentic.app.gateway.adapters import (
     AdapterRegistry,
-    OutboundMessage,
     InboundMessage,
+    OutboundMessage,
 )
 from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
 

@@ -4,14 +4,13 @@ import os
 import unittest
 
 import tinydb
-from cndi.annotations import Component, Bean
+from cndi.annotations import Bean, Component
 from cndi.env import RCN_ENVS_CONFIG
 from cndi.tests import cndi_context_test
 
-from agentic.app import get_main_agent
+from agentic.app import TELEGRAM_BOT_DEFAULT_CHAT_ID, get_main_agent
 from agentic.app.channels.telegram import ToolsRegistry
-from agentic.app.config import AgenticConfig, AgentConfig
-from agentic.app import TELEGRAM_BOT_DEFAULT_CHAT_ID
+from agentic.app.config import AgentConfig, AgenticConfig
 from agentic.app.scheduler.tools import CronSchedule
 from tests.integration.conftest import judge
 

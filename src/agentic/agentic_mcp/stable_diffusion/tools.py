@@ -2,12 +2,12 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import List, Any, Optional
+from typing import Any
 
 import httpx
 from cndi.annotations import Component
 from cndi.env import getContextEnvironment
-from fastmcp.tools import tool, ToolResult
+from fastmcp.tools import ToolResult, tool
 from httpx import ConnectError
 from mcp.types import TextContent
 from pydantic import BaseModel, Field
@@ -63,7 +63,7 @@ class ImageGenerationRequest(BaseModel):
     num_images: int = Field(
         default=1, ge=1, le=4, description="Number of images to generate in a batch"
     )
-    init_image_path: Optional[str] = Field(
+    init_image_path: str | None = Field(
         default=None,
         description=(
             "Optional path to an initial image for image-to-image generation. If provided, the model will use this image as a starting point and apply the prompt to modify it. "
@@ -98,7 +98,7 @@ async def fetch_image_from_url(
 
 class ModelOutput(BaseModel):
     id: str
-    data: List[Any]
+    data: list[Any]
 
 
 @Component
@@ -320,7 +320,7 @@ def get_image_tools(localai_api: LocalAiApi):
                         )
                         found = True
                         break
-                    except ConnectError as ce:
+                    except ConnectError:
                         logger.error(
                             f"Failed to retrive image from {d['url']} trying again in {1 * _} second"
                         )

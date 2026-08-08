@@ -1,6 +1,6 @@
 import logging
 import os.path
-from typing import List, Tuple, Dict, Optional, Any, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +24,7 @@ class ToolConfig(BaseModel):
     require_approval: bool = Field(
         description="If tool needs human in loop for approval"
     )
-    approval_text: Optional[str] = Field(
+    approval_text: str | None = Field(
         default=None, description="Text to show when requesting approval"
     )
 
@@ -46,7 +46,7 @@ class ModelConfig(BaseModel):
             "OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1"
         )
     )
-    api_key: Union[str, FromEnv] = Field(
+    api_key: str | FromEnv = Field(
         default_factory=lambda: FromEnv(env_key="OPENAI_API_KEY"),
         union_mode="left_to_right",
     )
@@ -58,12 +58,12 @@ class AgentConfig(BaseModel):
     workspace_dir: str
     name: str
     model_id: str
-    tools: Optional[Tuple[ToolConfig, ...]] = Field(default_factory=tuple)
-    denied_tools: Optional[Tuple[str, ...]] = Field(default_factory=tuple)
-    skills: Optional[List[SkillsConfig]] = Field(
+    tools: tuple[ToolConfig, ...] | None = Field(default_factory=tuple)
+    denied_tools: tuple[str, ...] | None = Field(default_factory=tuple)
+    skills: list[SkillsConfig] | None = Field(
         default_factory=tuple, description="List of skills path"
     )
-    agent_model_config: Optional[ModelConfig] = Field(
+    agent_model_config: ModelConfig | None = Field(
         default=None, description="Model configuration for the agent"
     )
 
@@ -71,16 +71,16 @@ class AgentConfig(BaseModel):
 class AgenticConfig(BaseModel):
     workspace: str
     agents: list[AgentConfig] = Field(description="List of agents")
-    mcpServers: Dict[str, dict] = Field(description="MCP Server configuration")
+    mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
 
-    def get_model(self, model_id: str) -> Optional[ModelConfig]:
+    def get_model(self, model_id: str) -> ModelConfig | None:
         for model in self.models:
             if model.model_id == model_id:
                 return model
         return None
 
-    def get_agent(self, name: str) -> Optional[AgentConfig]:
+    def get_agent(self, name: str) -> AgentConfig | None:
         for agent in self.agents:
             if agent.name == name:
                 return agent

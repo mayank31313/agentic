@@ -1,9 +1,9 @@
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import MagicMock
+from urllib.error import HTTPError
 
 import pytest
-from urllib.error import HTTPError
 
 import scripts.proxmox_crud as proxmox
 

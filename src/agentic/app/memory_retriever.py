@@ -3,7 +3,6 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Dict, Optional
 
 try:
     from elasticsearch import Elasticsearch
@@ -151,7 +150,7 @@ class MemoryRetriever:
 
     async def search_relevant_messages(
         self, chat_id: int, query: str, limit: int = 5, timeout: float = 5.0
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Search for relevant messages in the conversation history.
 
@@ -176,14 +175,14 @@ class MemoryRetriever:
                 # Fallback: simple in-memory search
                 return self._in_memory_search(chat_id, query, limit)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Search timeout for chat {chat_id}")
             return []
         except Exception as e:
             logger.error(f"Search failed: {e}")
             return []
 
-    def _es_search(self, chat_id: int, query: str, limit: int) -> List[Dict]:
+    def _es_search(self, chat_id: int, query: str, limit: int) -> list[dict]:
         """Elasticsearch search (blocking)."""
         try:
             search_body = {
@@ -219,7 +218,7 @@ class MemoryRetriever:
             logger.error(f"Elasticsearch search error: {e}")
             return []
 
-    def _in_memory_search(self, chat_id: int, query: str, limit: int) -> List[Dict]:
+    def _in_memory_search(self, chat_id: int, query: str, limit: int) -> list[dict]:
         """Simple in-memory search using keyword matching."""
         if chat_id not in self.in_memory_messages:
             return []
@@ -240,8 +239,8 @@ class MemoryRetriever:
         return results[:limit]
 
     async def search_by_topic(
-        self, chat_id: int, keywords: List[str], limit: int = 5
-    ) -> List[Dict]:
+        self, chat_id: int, keywords: list[str], limit: int = 5
+    ) -> list[dict]:
         """
         Search for messages containing any of the given keywords.
 
@@ -268,8 +267,8 @@ class MemoryRetriever:
             return []
 
     def _es_topic_search(
-        self, chat_id: int, keywords: List[str], limit: int
-    ) -> List[Dict]:
+        self, chat_id: int, keywords: list[str], limit: int
+    ) -> list[dict]:
         """Elasticsearch topic search (blocking)."""
         try:
             should_clauses = [{"match": {"content": kw}} for kw in keywords]
@@ -310,8 +309,8 @@ class MemoryRetriever:
             return []
 
     def _in_memory_topic_search(
-        self, chat_id: int, keywords: List[str], limit: int
-    ) -> List[Dict]:
+        self, chat_id: int, keywords: list[str], limit: int
+    ) -> list[dict]:
         """Simple in-memory topic search."""
         if chat_id not in self.in_memory_messages:
             return []
@@ -329,7 +328,7 @@ class MemoryRetriever:
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:limit]
 
-    async def get_chat_history(self, chat_id: int, limit: int = 10) -> List[Dict]:
+    async def get_chat_history(self, chat_id: int, limit: int = 10) -> list[dict]:
         """
         Get recent messages for a chat.
 
@@ -355,7 +354,7 @@ class MemoryRetriever:
             logger.error(f"Get history failed: {e}")
             return []
 
-    def _es_get_history(self, chat_id: int, limit: int) -> List[Dict]:
+    def _es_get_history(self, chat_id: int, limit: int) -> list[dict]:
         """Get chat history from Elasticsearch (blocking)."""
         try:
             search_body = {
@@ -402,7 +401,7 @@ class MemoryRetriever:
 
 
 # Global instance
-_memory_retriever: Optional[MemoryRetriever] = None
+_memory_retriever: MemoryRetriever | None = None
 
 
 def get_memory_retriever(

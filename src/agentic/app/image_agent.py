@@ -37,12 +37,10 @@ import json
 import mimetypes
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-
 
 # --------------------------------------------------------------------------
 # Config
@@ -57,7 +55,7 @@ from pydantic import BaseModel, Field
 class FixPromptResult(BaseModel):
     """Structured result returned by the agent for a defective image."""
 
-    defects_detected: List[str] = Field(
+    defects_detected: list[str] = Field(
         description=(
             "Concise list of the specific visual defects found in the "
             "image (e.g. 'warped left hand with 6 fingers', "
@@ -81,7 +79,7 @@ class FixPromptResult(BaseModel):
             "so the image-edit model actively avoids reproducing them."
         )
     )
-    confidence: Optional[str] = Field(
+    confidence: str | None = Field(
         default=None,
         description="'high', 'medium', or 'low' confidence in the defect analysis.",
     )
@@ -153,7 +151,7 @@ class DefectFixPromptAgent:
     def analyze(
         self,
         image_path: str,
-        extra_instructions: Optional[str] = None,
+        extra_instructions: str | None = None,
     ) -> FixPromptResult:
         """Run the agent on a defective image and return structured
         fix_prompt / negative_prompt output.
@@ -185,16 +183,16 @@ class DefectFixPromptAgent:
 
     def analyze_batch(
         self,
-        image_paths: List[str],
-        extra_instructions: Optional[str] = None,
+        image_paths: list[str],
+        extra_instructions: str | None = None,
         on_error: str = "skip",  # "skip" or "raise"
-    ) -> "dict[str, Optional[FixPromptResult]]":
+    ) -> dict[str, FixPromptResult | None]:
         """Run `analyze` over a list of images, one by one.
 
         Returns a dict mapping image_path -> FixPromptResult (or None if
         that image failed and on_error="skip").
         """
-        results: "dict[str, Optional[FixPromptResult]]" = {}
+        results: dict[str, FixPromptResult | None] = {}
         for path in image_paths:
             print(f"[batch] analyzing {path} ...")
             try:
@@ -209,7 +207,7 @@ class DefectFixPromptAgent:
         return results
 
     @classmethod
-    def iter_images_in_dir(cls, directory: str) -> List[str]:
+    def iter_images_in_dir(cls, directory: str) -> list[str]:
         """Helper: list image files in a directory (non-recursive)."""
         d = Path(directory)
         return sorted(
@@ -228,7 +226,7 @@ class DefectFixPromptAgent:
         apply_edit_fn,
         max_iterations: int = 3,
         clean_confidence: str = "high",
-    ) -> "dict":
+    ) -> dict:
         """Iteratively: analyze defects -> call an external image-edit
         function with (fix_prompt, negative_prompt) -> re-analyze the
         edited result -> repeat until either no defects are reported,

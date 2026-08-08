@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional, List
 from uuid import UUID, uuid4
 
 from cndi.annotations import Autowired
@@ -8,7 +7,7 @@ from cndi.annotations.events import EventBus
 from cndi.env import getContextEnvironment
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-from tinydb import TinyDB, Query
+from tinydb import Query, TinyDB
 
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID
@@ -39,7 +38,7 @@ class SubAgentConfig(BaseModel):
         "may load/append to shared conversation context. If False, the "
         "subagent always runs with a fresh, isolated context.",
     )
-    session_id: Optional[str] = Field(
+    session_id: str | None = Field(
         default=None,
         description="Identifier for the shared session/thread to attach to when "
         "share_session=True. If not provided but share_session=True, "
@@ -48,7 +47,7 @@ class SubAgentConfig(BaseModel):
 
 
 class Delivery(BaseModel):
-    to: List[str] = Field(description="list of channel ids to send the message to")
+    to: list[str] = Field(description="list of channel ids to send the message to")
     channel: str = Field(default="telegram", description="name of the channel")
     mode: str = Field(default="announce", description="mode of communication")
 
@@ -122,10 +121,10 @@ def get_cron_tools(event_bus: EventBus):
                 return f"Cron job successfully created with name '{cron_settings.name}' with cron expression '{cron_settings.cron_expression}' and message '{cron_settings.task}'."
         except Exception as e:
             logging.error(f"Error scheduling job: {e}")
-            return f"Error: {str(e)}"
+            return f"Error: {e!s}"
 
     @tool
-    def list_cron_tool() -> List[CronSchedule]:
+    def list_cron_tool() -> list[CronSchedule]:
         """List all scheduled cron jobs. Call this tool to see the current cron jobs and their settings."""
         try:
             with TinyDB(
@@ -139,7 +138,7 @@ def get_cron_tools(event_bus: EventBus):
                 return crons
         except Exception as e:
             logging.error(f"Error listing cron schedules: {e}")
-            return f"Error: {str(e)}"
+            return f"Error: {e!s}"
 
     @tool
     def update_cron_tool(
@@ -170,7 +169,7 @@ def get_cron_tools(event_bus: EventBus):
                     return f"No cron job found with the name '{name}'."
         except Exception as e:
             logging.error(f"Error updating cron schedule: {e}")
-            return f"Error: {str(e)}"
+            return f"Error: {e!s}"
 
     return [create_cron_tool, list_cron_tool, update_cron_tool, delete_cron_tool]
 

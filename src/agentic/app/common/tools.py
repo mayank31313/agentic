@@ -1,13 +1,12 @@
 import asyncio
 import logging
 import subprocess
-from typing import List
 
 from cndi.annotations import Autowired, Bean
 from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
-from langchain_core.tools import tool, BaseTool
+from langchain_core.tools import BaseTool, tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
@@ -36,7 +35,7 @@ class ToolsRegistry:
         self.tools[name] = func
         logger.debug(f"Tool Registered {name}")
 
-    def get_tools(self, tool_names: List[str]) -> List[BaseTool]:
+    def get_tools(self, tool_names: list[str]) -> list[BaseTool]:
         tools = []
         for tool_name in tool_names:
             tools.append(self.tools[tool_name])
@@ -85,15 +84,15 @@ def set_common_tools(
         # Here you would implement the actual sending logic using a Telegram bot API
         # For demonstration, we'll just log the message and return a success status.
         logger.info(f"Sending message to Telegram chat: {message}")
-        return f"Message sent to Telegram chat"
+        return "Message sent to Telegram chat"
 
     @tool
-    def list_registered_agents() -> List[str]:
+    def list_registered_agents() -> list[str]:
         "List all registered agents in the registry"
         return list(agent_registry.agents.keys())
 
     @tool
-    def list_available_tools() -> List[str]:
+    def list_available_tools() -> list[str]:
         "List all available tools in the registry"
         return list(tool_registry.tools.keys())
 
@@ -132,7 +131,7 @@ def set_common_tools(
 
     if agentic_config.mcpServers:
         client = MultiServerMCPClient(agentic_config.mcpServers)
-        tools: List[BaseTool] = asyncio.run(client.get_tools())
+        tools: list[BaseTool] = asyncio.run(client.get_tools())
         for mcp_tool in tools:
             tool_registry.register_tool(mcp_tool.name, mcp_tool)
 

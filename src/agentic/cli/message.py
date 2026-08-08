@@ -8,7 +8,6 @@ def message():
     This group contains commands for sending different types of messages
     through the bot application.
     """
-    pass
 
 
 @message.command()

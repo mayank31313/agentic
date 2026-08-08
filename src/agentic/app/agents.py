@@ -16,10 +16,10 @@ from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from transformers import (
-    pipeline,
-    SpeechT5Processor,
     SpeechT5ForTextToSpeech,
     SpeechT5HifiGan,
+    SpeechT5Processor,
+    pipeline,
 )
 
 from agentic.app.config import AgentConfig, ToolConfig

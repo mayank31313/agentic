@@ -17,7 +17,6 @@ def cli():
     - Manage configuration settings
     - Access Model Context Protocol tools
     """
-    pass
 
 
 @cli.command()
@@ -30,10 +29,9 @@ def run():
     Example:
         agentic run
     """
-    from agentic.app.config import AgenticConfig
     from agentic.bot_app import run_bot
 
-    click.echo(f"Starting bot app server from...")
+    click.echo("Starting bot app server from...")
     run_bot()
 
 

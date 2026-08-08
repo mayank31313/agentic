@@ -5,7 +5,7 @@ from cndi.initializers import AppInitializer
 from fastmcp import FastMCP
 
 from agentic.agentic_mcp.gmail.tools import get_gmail_tools
-from agentic.agentic_mcp.stable_diffusion.tools import get_image_tools, LocalAiApi
+from agentic.agentic_mcp.stable_diffusion.tools import LocalAiApi, get_image_tools
 
 mcp = FastMCP("Agentic MCP")
 

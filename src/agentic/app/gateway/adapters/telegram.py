@@ -1,10 +1,10 @@
 import asyncio
 import logging
 
-from cndi.annotations import Component, Bean
+from cndi.annotations import Bean, Component
 from cndi.env import getContextEnvironment
 from cndi.secrets.vault import VaultSecretProvider
-from telegram import Bot, ForceReply, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -13,18 +13,18 @@ from telegram.ext import (
     filters,
 )
 
-from agentic.app.common import InterruptEvent, INTERRUPT_EVENT
+from agentic.app.common import INTERRUPT_EVENT, InterruptEvent
 from agentic.app.common.audio import AudioProcessor
-from agentic.app.constants import TELEGRAM_BOT_TOKEN_PROP, TELEGRAM_BOT_DEFAULT_CHAT_ID
+from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, TELEGRAM_BOT_TOKEN_PROP
 from agentic.app.gateway.adapters import (
-    OutboundMessage,
-    InboundMessage,
-    ChannelAdapter,
     AdapterRegistry,
+    ChannelAdapter,
+    InboundMessage,
+    OutboundMessage,
 )
 from agentic.app.gateway.adapters.consts import TELEGRAM_SECRET
 from agentic.app.gateway.server import Gateway
-from agentic.app.reactions import remove_reaction, add_reaction
+from agentic.app.reactions import add_reaction, remove_reaction
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -215,7 +215,7 @@ class TelegramAdapter(ChannelAdapter):
                 await remove_reaction(context, chat_id, message_id)
                 await add_reaction(context, chat_id, message_id, "✅")
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(f"[Chat {chat_id}] Agent call timed out after 120 seconds")
                 await remove_reaction(context, chat_id, message_id)
                 await add_reaction(context, chat_id, message_id, "⏱️")
@@ -231,7 +231,7 @@ class TelegramAdapter(ChannelAdapter):
 
         except Exception as e:
             logger.error(
-                f"[Chat {chat_id}] Agent streaming failed: {type(e).__name__}: {str(e)}",
+                f"[Chat {chat_id}] Agent streaming failed: {type(e).__name__}: {e!s}",
                 exc_info=True,
             )
             await remove_reaction(context, chat_id, message_id)

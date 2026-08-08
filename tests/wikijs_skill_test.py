@@ -1,4 +1,5 @@
 import pytest
+
 from src.skills.wikijs_skill import WikiJsSkill
 
 

@@ -11,7 +11,6 @@ def agents():
     This group provides commands to list available agents, run specific agents,
     and manage agent configurations.
     """
-    pass
 
 
 @agents.command()
@@ -76,7 +75,6 @@ def run(agent_name, task):
     """
     try:
         # Import here to avoid circular imports
-        from agentic.app import get_main_agent
         from agentic.app.config import AgenticConfig
 
         # Load configuration

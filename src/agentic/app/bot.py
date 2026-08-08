@@ -3,8 +3,8 @@ import logging
 
 from cndi.annotations import Component
 from cndi.annotations.events import EventBus
-from langchain_core.messages import ToolMessage, AIMessage
-from langgraph.types import Interrupt, Command
+from langchain_core.messages import AIMessage, ToolMessage
+from langgraph.types import Command, Interrupt
 
 from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry, get_main_agent

@@ -13,7 +13,6 @@ def config():
     This group provides commands to inspect and modify the bot's
     configuration stored in agentic.json or other JSON configuration files.
     """
-    pass
 
 
 @config.command()

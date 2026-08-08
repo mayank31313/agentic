@@ -20,7 +20,7 @@ class OutboundMessage(BaseModel):
     channel: str
     chat_id: str
     text: str
-    reply_to_message_id: Optional[str] = None
+    reply_to_message_id: str | None = None
     metadata: dict = Field(default=dict)
 
 
@@ -34,7 +34,7 @@ class ChannelAdapter(ABC):
         """Validate signature/secret. Return False to reject the request."""
         ...
 
-    def parse_inbound(self, payload: dict) -> Optional[InboundMessage]:
+    def parse_inbound(self, payload: dict) -> InboundMessage | None:
         """Convert the channel's raw payload into a normalized InboundMessage.
         Return None for events that aren't actual user messages (e.g. delivery receipts)."""
 

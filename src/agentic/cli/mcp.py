@@ -8,7 +8,6 @@ def mcp():
     This group contains commands for interacting with the Model Context
     Protocol (MCP) implementation in the Agentic framework.
     """
-    pass
 
 
 @mcp.command()

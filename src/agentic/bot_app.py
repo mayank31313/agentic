@@ -15,7 +15,7 @@ from telegram import Update
 from telegram.ext import Application
 
 from agentic.app.bot import AgenticBot
-from agentic.app.config import AgentConfig, AgenticConfig, ToolConfig, SkillsConfig
+from agentic.app.config import AgentConfig, AgenticConfig, SkillsConfig, ToolConfig
 from agentic.app.constants import AGENTIC_FILE_NAME_PROP
 from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
 from agentic.app.gateway.server import Gateway, get_adapter_gateway
@@ -121,7 +121,11 @@ def run_bot():
     app.run(onComplete=main)
 
     while True:
-        time.sleep(5)
+        try:
+            time.sleep(5)
+        except KeyboardInterrupt:
+            logger.info("Shutting down...")
+            exit(0)
 
 
 if __name__ == "__main__":
