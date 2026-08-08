@@ -1,4 +1,5 @@
 FROM python:3.13-slim
+RUN apt update && apt install ffmpeg -y
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /bot
 COPY pyproject.toml README.md /bot/
