@@ -226,6 +226,7 @@ in the agent's Python setup, not here:
   the script file's location. Anchor it instead:
   ```python
   from pathlib import Path
+
   SKILLS_DIR = Path(__file__).parent / "skills"
   agent = create_deep_agent(model="...", skills=[str(SKILLS_DIR)])
   ```

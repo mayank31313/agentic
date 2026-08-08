@@ -1,9 +1,10 @@
+import json
+import logging
+
 from cndi.annotations import Component
 from cndi.annotations.events import EventBus
 from langchain_core.messages import ToolMessage, AIMessage
 from langgraph.types import Interrupt, Command
-from pydantic import BaseModel
-from telegram import ReplyKeyboardRemove
 
 from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry, get_main_agent
@@ -11,25 +12,26 @@ from agentic.app.channels.telegram import TelegramToolNotifierMiddleware
 from agentic.app.common import InterruptEvent
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgentConfig
-import logging
-import json
 
 logger = logging.getLogger(__name__)
 
 
-
 @Component
 class AgenticBot:
-    def __init__(self, agenticConfig: AgenticConfig,
-                 telegram_tool_middleware: TelegramToolNotifierMiddleware,
-                 event_bus: EventBus,
-                 tool_registry: ToolsRegistry,
-                 agent_registry: AgentRegistry
-                 ):
+    def __init__(
+        self,
+        agenticConfig: AgenticConfig,
+        telegram_tool_middleware: TelegramToolNotifierMiddleware,
+        event_bus: EventBus,
+        tool_registry: ToolsRegistry,
+        agent_registry: AgentRegistry,
+    ):
         self.middelwares = [telegram_tool_middleware]
         self.max_approvals = 5
         self.agenticConfig = agenticConfig
-        self.agentConfig: AgentConfig = next(filter(lambda x: x.name == 'main',agenticConfig.agents))
+        self.agentConfig: AgentConfig = next(
+            filter(lambda x: x.name == "main", agenticConfig.agents)
+        )
         self.tool_registry = tool_registry
         self.agent_registry = agent_registry
         self.event_bus = event_bus
@@ -37,7 +39,12 @@ class AgenticBot:
         self.content_ids = set()
 
         if self.agentConfig.agent_model_config is None:
-            self.agentConfig.agent_model_config = next(filter(lambda x: x.model_id == self.agentConfig.model_id, agenticConfig.models))
+            self.agentConfig.agent_model_config = next(
+                filter(
+                    lambda x: x.model_id == self.agentConfig.model_id,
+                    agenticConfig.models,
+                )
+            )
 
     def initialise_agent(self):
         runnable_tools, approvable_tools = [], []
@@ -45,63 +52,87 @@ class AgenticBot:
             if tool_config.require_approval:
                 approvable_tools.append(tool_config)
 
-        tools = list(filter(lambda x: x.name not in self.agentConfig.denied_tools, self.tool_registry.tools.values()))
+        tools = list(
+            filter(
+                lambda x: x.name not in self.agentConfig.denied_tools,
+                self.tool_registry.tools.values(),
+            )
+        )
 
         if len(tools) > 0:
             logger.info("Available tools in context")
             for i, t in enumerate(tools):
                 logger.info(f"{i}: {t.name}")
 
-
-        self.agent = get_main_agent(agent_config=self.agentConfig,
-                                    tools=tools,
-                                    tools_need_approval=approvable_tools,
-                                    middlewares=self.middelwares)
+        self.agent = get_main_agent(
+            agent_config=self.agentConfig,
+            tools=tools,
+            tools_need_approval=approvable_tools,
+            middlewares=self.middelwares,
+        )
 
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
-
-    async def invoke_agent(self, message,
-                           chat_id,
-                           message_id,
-                           channel_metadata: dict):
+    async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict):
 
         config = {"configurable": {"thread_id": chat_id}}
-        if message.startswith('$decision'):
-            _, decision = message.split(' ')
-            output = await self.agent.ainvoke(Command(resume={"decisions": [dict(type=decision)]}), config=config)
+        if message.startswith("$decision"):
+            _, decision = message.split(" ")
+            output = await self.agent.ainvoke(
+                Command(resume={"decisions": [dict(type=decision)]}), config=config
+            )
         else:
             output = await self.agent.ainvoke(dict(messages=message), config=config)
 
-        if  "__interrupt__" in output:
+        if "__interrupt__" in output:
             interrupt_data: list[Interrupt] = output["__interrupt__"]
-            review_configs = interrupt_data[0].value['review_configs']
-            action_requests = interrupt_data[0].value['action_requests']
+            review_configs = interrupt_data[0].value["review_configs"]
+            action_requests = interrupt_data[0].value["action_requests"]
 
-            keyboard_buttons = [[f"$decision {decision}"] for decision in review_configs[0]['allowed_decisions']]
+            keyboard_buttons = [
+                [f"$decision {decision}"]
+                for decision in review_configs[0]["allowed_decisions"]
+            ]
             logger.info(interrupt_data)
 
-            return [InterruptEvent(text=f"""Tool Called Request Interrupt
-Tool Name: {action_requests[0]['name']}
-Args: {action_requests[0]['args']}""",interrupt=interrupt_data[0], chat_id=chat_id, message_id=message_id,
-                                   metadata=dict(action_requests=action_requests, review_configs=review_configs, keyboard_buttons=keyboard_buttons)).model_dump(mode="json")]
+            return [
+                InterruptEvent(
+                    text=f"""Tool Called Request Interrupt
+Tool Name: {action_requests[0]["name"]}
+Args: {action_requests[0]["args"]}""",
+                    interrupt=interrupt_data[0],
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    metadata=dict(
+                        action_requests=action_requests,
+                        review_configs=review_configs,
+                        keyboard_buttons=keyboard_buttons,
+                    ),
+                ).model_dump(mode="json")
+            ]
 
         # Extract and send response
         response_text = list()
-        for message in output['messages']:
+        for message in output["messages"]:
             logger.info(f"[Chat {chat_id}] Agent response: {message}")
             if message.id in self.content_ids:
-                logger.debug(f"[Chat {chat_id}] Skipping duplicate message ID: {message.id}")
+                logger.debug(
+                    f"[Chat {chat_id}] Skipping duplicate message ID: {message.id}"
+                )
                 continue
             self.content_ids.add(message.id)
-            if type(message) == ToolMessage and type(message.content) == str and message.content.startswith('json:'):
+            if (
+                type(message) == ToolMessage
+                and type(message.content) == str
+                and message.content.startswith("json:")
+            ):
                 contents = json.loads(message.content[5:])
                 for content in contents:
                     response_text.append(content)
-            if type(message) == AIMessage and message.content != '':
-                content = dict(text=message.content, type='text')
+            if type(message) == AIMessage and message.content != "":
+                content = dict(text=message.content, type="text")
                 response_text.append(content)
-            if type(message) in [list ,tuple]:
+            if type(message) in [list, tuple]:
                 for content in message.content:
                     if type(content) == dict:
                         response_text.append(content)

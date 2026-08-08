@@ -19,6 +19,7 @@ def cli():
     """
     pass
 
+
 @cli.command()
 def run():
     """Start the bot app server.
@@ -31,14 +32,9 @@ def run():
     """
     from agentic.app.config import AgenticConfig
     from agentic.bot_app import run_bot
+
     click.echo(f"Starting bot app server from...")
     run_bot()
-
-
-
-
-
-
 
 
 def main():
@@ -49,5 +45,6 @@ def main():
     add_config_commands(cli)
     cli()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

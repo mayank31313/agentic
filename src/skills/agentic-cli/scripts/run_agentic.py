@@ -39,7 +39,6 @@ parsing the JSON body.
 
 import argparse
 import json
-import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -86,7 +85,7 @@ def run_agentic(args: list[str], cwd: str | None, timeout: float | None) -> dict
         result_payload["timed_out"] = True
         result_payload["exit_code"] = None
         result_payload["success"] = False
-        result_payload["stdout"] = (e.stdout or "")
+        result_payload["stdout"] = e.stdout or ""
         result_payload["stderr"] = (e.stderr or "") + (
             f"\n[wrapper] Command timed out after {timeout}s. "
             "If this was `agentic run` (a blocking server), that's "
@@ -115,14 +114,14 @@ def main() -> int:
         "--cwd",
         default=None,
         help="Directory to run the command from (default: current directory). "
-             "Should usually be the project root containing agentic.json and pyproject.toml.",
+        "Should usually be the project root containing agentic.json and pyproject.toml.",
     )
     parser.add_argument(
         "--timeout",
         type=float,
         default=30.0,
         help="Timeout in seconds (default: 30). Use a short timeout for anything "
-             "other than 'agentic run', which blocks indefinitely by design.",
+        "other than 'agentic run', which blocks indefinitely by design.",
     )
     parser.add_argument(
         "--pretty",
@@ -133,7 +132,7 @@ def main() -> int:
         "args",
         nargs=argparse.REMAINDER,
         help="Everything after this is passed through to `agentic` as-is. "
-             "Use '--' before it if any of your args start with '-'.",
+        "Use '--' before it if any of your args start with '-'.",
     )
 
     parsed = parser.parse_args()

@@ -35,14 +35,14 @@ import argparse
 import base64
 import json
 import mimetypes
-import os
 import sys
 from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+
 
 # --------------------------------------------------------------------------
 # Config
@@ -52,6 +52,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 # --------------------------------------------------------------------------
 # Structured output schema
 # --------------------------------------------------------------------------
+
 
 class FixPromptResult(BaseModel):
     """Structured result returned by the agent for a defective image."""
@@ -197,7 +198,9 @@ class DefectFixPromptAgent:
         for path in image_paths:
             print(f"[batch] analyzing {path} ...")
             try:
-                results[path] = self.analyze(path, extra_instructions=extra_instructions)
+                results[path] = self.analyze(
+                    path, extra_instructions=extra_instructions
+                )
             except Exception as exc:
                 print(f"[batch]   failed: {exc}", file=sys.stderr)
                 if on_error == "raise":
@@ -210,7 +213,8 @@ class DefectFixPromptAgent:
         """Helper: list image files in a directory (non-recursive)."""
         d = Path(directory)
         return sorted(
-            str(p) for p in d.iterdir()
+            str(p)
+            for p in d.iterdir()
             if p.is_file() and p.suffix.lower() in cls.IMAGE_EXTENSIONS
         )
 
@@ -248,7 +252,9 @@ class DefectFixPromptAgent:
             history.append({"iteration": i, "image": current_image, "result": result})
 
             no_defects_left = len(result.defects_detected) == 0
-            confident_enough = (result.confidence or "").lower() == clean_confidence.lower()
+            confident_enough = (
+                result.confidence or ""
+            ).lower() == clean_confidence.lower()
 
             if no_defects_left or confident_enough:
                 print(f"[refine] stopping early at iteration {i}: image looks clean.")
@@ -258,7 +264,9 @@ class DefectFixPromptAgent:
                 print("[refine] reached max_iterations without a fully clean result.")
                 break
 
-            current_image = apply_edit_fn(current_image, result.fix_prompt, result.negative_prompt)
+            current_image = apply_edit_fn(
+                current_image, result.fix_prompt, result.negative_prompt
+            )
 
         return {"history": history, "final_image": current_image}
 
@@ -267,12 +275,22 @@ class DefectFixPromptAgent:
 # CLI
 # --------------------------------------------------------------------------
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate a fix/negative prompt pair for a defective image.")
+    parser = argparse.ArgumentParser(
+        description="Generate a fix/negative prompt pair for a defective image."
+    )
     parser.add_argument("--image", help="Path to a single defective image")
-    parser.add_argument("--batch-dir", help="Path to a directory of defective images to process in a loop")
-    parser.add_argument("--notes", default=None, help="Optional extra context about the defect")
-    parser.add_argument("--json", action="store_true", help="Print raw JSON instead of formatted text")
+    parser.add_argument(
+        "--batch-dir",
+        help="Path to a directory of defective images to process in a loop",
+    )
+    parser.add_argument(
+        "--notes", default=None, help="Optional extra context about the defect"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Print raw JSON instead of formatted text"
+    )
     args = parser.parse_args()
 
     if not args.image and not args.batch_dir:
@@ -294,10 +312,12 @@ def main() -> None:
         results = agent.analyze_batch(image_paths, extra_instructions=args.notes)
 
         if args.json:
-            print(json.dumps(
-                {p: (r.model_dump() if r else None) for p, r in results.items()},
-                indent=2,
-            ))
+            print(
+                json.dumps(
+                    {p: (r.model_dump() if r else None) for p, r in results.items()},
+                    indent=2,
+                )
+            )
         else:
             for path, result in results.items():
                 print(f"\n=== {path} ===")

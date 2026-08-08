@@ -5,21 +5,23 @@ from pathlib import Path
 from typing import List, Any, Optional
 
 import httpx
-
 from cndi.annotations import Component
 from cndi.env import getContextEnvironment
 from fastmcp.tools import tool, ToolResult
 from httpx import ConnectError
 from mcp.types import TextContent
-
 from pydantic import BaseModel, Field
 
 from agentic.app.agents import get_image_agent
-from agentic.app.constants import EXTERNAL_API_LOCALAI_BASE_URL_PROP, EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP, \
-    EXTERNAL_API_LOCALAI_REQUEST_TIMEOUT_PROP
+from agentic.app.constants import (
+    EXTERNAL_API_LOCALAI_BASE_URL_PROP,
+    EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP,
+    EXTERNAL_API_LOCALAI_REQUEST_TIMEOUT_PROP,
+)
 from agentic.app.image_agent import DefectFixPromptAgent
 
 logger = logging.getLogger(__name__)
+
 
 class ImageGenerationRequest(BaseModel):
     prompt: str = Field(
@@ -59,17 +61,16 @@ class ImageGenerationRequest(BaseModel):
         ),
     )
     num_images: int = Field(
-        default=1,
-        ge=1,
-        le=4,
-        description="Number of images to generate in a batch"
+        default=1, ge=1, le=4, description="Number of images to generate in a batch"
     )
     init_image_path: Optional[str] = Field(
         default=None,
         description=(
             "Optional path to an initial image for image-to-image generation. If provided, the model will use this image as a starting point and apply the prompt to modify it. "
             "If not provided, the model will generate an image from scratch based solely on the prompt."
-        ))
+        ),
+    )
+
 
 async def save_image_bytes_async(image_bytes: bytes, path: str) -> Path:
     file_path = Path(path)
@@ -77,7 +78,10 @@ async def save_image_bytes_async(image_bytes: bytes, path: str) -> Path:
     await asyncio.to_thread(file_path.write_bytes, image_bytes)
     return file_path
 
-async def fetch_image_from_url(url: str, max_retries: int = 3, delay: float = 1.0) -> bytes:
+
+async def fetch_image_from_url(
+    url: str, max_retries: int = 3, delay: float = 1.0
+) -> bytes:
     last_error = None
     async with httpx.AsyncClient(timeout=60) as client:
         for attempt in range(max_retries):
@@ -91,31 +95,45 @@ async def fetch_image_from_url(url: str, max_retries: int = 3, delay: float = 1.
                     await asyncio.sleep(delay * (attempt + 1))
     raise last_error
 
+
 class ModelOutput(BaseModel):
     id: str
     data: List[Any]
 
+
 @Component
 class LocalAiApi:
     def __init__(self, url=None, image_model=None):
-        self.url = url or getContextEnvironment(EXTERNAL_API_LOCALAI_BASE_URL_PROP, os.getenv("AGENTIC_BOT_LOCAL_API_BASE_URL"))
-        self.image_model = image_model or getContextEnvironment(EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP, os.getenv("AGENTIC_BOT_LOCAL_API_IMAGE_MODEL"))
-        self.request_timeout = getContextEnvironment(EXTERNAL_API_LOCALAI_REQUEST_TIMEOUT_PROP, castFunc=int, defaultValue=1200)
+        self.url = url or getContextEnvironment(
+            EXTERNAL_API_LOCALAI_BASE_URL_PROP,
+            os.getenv("AGENTIC_BOT_LOCAL_API_BASE_URL"),
+        )
+        self.image_model = image_model or getContextEnvironment(
+            EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP,
+            os.getenv("AGENTIC_BOT_LOCAL_API_IMAGE_MODEL"),
+        )
+        self.request_timeout = getContextEnvironment(
+            EXTERNAL_API_LOCALAI_REQUEST_TIMEOUT_PROP, castFunc=int, defaultValue=1200
+        )
 
     async def wait_for_task_completion(self, task_id: str, poll_interval: float = 2.0):
         elapsed_time = 0.0
         while elapsed_time < self.request_timeout:
-            response = await self._get(path=f'tasks/{task_id}')
-            status = response.get('status')
-            if status == 'COMPLETED':
+            response = await self._get(path=f"tasks/{task_id}")
+            status = response.get("status")
+            if status == "COMPLETED":
                 return response
-            elif status == 'FAILED':
+            elif status == "FAILED":
                 raise Exception(f"Image generation task {task_id} failed.")
             await asyncio.sleep(poll_interval)
             elapsed_time += poll_interval
-        raise TimeoutError(f"Image generation task {task_id} did not complete within {self.request_timeout} seconds.")
+        raise TimeoutError(
+            f"Image generation task {task_id} did not complete within {self.request_timeout} seconds."
+        )
 
-    async def generate_image_as_task(self, image_generation_request: ImageGenerationRequest):
+    async def generate_image_as_task(
+        self, image_generation_request: ImageGenerationRequest
+    ):
         payload = {
             "prompt": image_generation_request.prompt,
             "negative_prompt": image_generation_request.negative_prompt,
@@ -124,11 +142,17 @@ class LocalAiApi:
             "model": self.image_model,
             # "temperature": image_generation_request.temperature
         }
-        task_id = (await self._post(path='images/generations', json=payload)).get('task_id')
+        task_id = (await self._post(path="images/generations", json=payload)).get(
+            "task_id"
+        )
 
-        return await asyncio.wait_for(self.wait_for_task_completion(task_id), timeout=self.request_timeout)
+        return await asyncio.wait_for(
+            self.wait_for_task_completion(task_id), timeout=self.request_timeout
+        )
 
-    async def generate_image_to_image_as_task(self, image_generation_request: ImageGenerationRequest):
+    async def generate_image_to_image_as_task(
+        self, image_generation_request: ImageGenerationRequest
+    ):
         payload = {
             "prompt": image_generation_request.prompt,
             "negative_prompt": image_generation_request.negative_prompt,
@@ -138,22 +162,27 @@ class LocalAiApi:
             # "temperature": image_generation_request.temperature
             "init_image": dict(
                 type="base64",
-                data=DefectFixPromptAgent.image_to_data_url(image_generation_request.init_image_path)
-            )
+                data=DefectFixPromptAgent.image_to_data_url(
+                    image_generation_request.init_image_path
+                ),
+            ),
         }
-        task_id = (await self._post(path='images/img2img', json=payload)).get('task_id')
+        task_id = (await self._post(path="images/img2img", json=payload)).get("task_id")
 
-        return await asyncio.wait_for(self.wait_for_task_completion(task_id), timeout=self.request_timeout)
+        return await asyncio.wait_for(
+            self.wait_for_task_completion(task_id), timeout=self.request_timeout
+        )
+
     async def generate_image(self, image_generation_request: ImageGenerationRequest):
         payload = {
-                    "prompt": image_generation_request.prompt,
-                    "negative_prompt": image_generation_request.negative_prompt,
-                    # "n": image_generation_request.num_images,
-                    # "size": '512x512',
-                    "model": self.image_model,
-                    # "temperature": image_generation_request.temperature
-                }
-        return await self._post(path='images/generations', json=payload)
+            "prompt": image_generation_request.prompt,
+            "negative_prompt": image_generation_request.negative_prompt,
+            # "n": image_generation_request.num_images,
+            # "size": '512x512',
+            "model": self.image_model,
+            # "temperature": image_generation_request.temperature
+        }
+        return await self._post(path="images/generations", json=payload)
 
     async def _get(self, path):
         async with httpx.AsyncClient(timeout=self.request_timeout) as client:
@@ -171,7 +200,6 @@ class LocalAiApi:
             )
             response.raise_for_status()
             return response.json()
-
 
 
 SYSTEM_PROMPT = """\
@@ -213,6 +241,7 @@ Evaluate the attached image against the original prompt's intent and return the 
 structured analysis.
 """
 
+
 class ImageAnalysisResult(BaseModel):
     fix_prompt: str = Field(
         description="Corrected version of the original prompt that would better "
@@ -235,6 +264,7 @@ class ImageAnalysisResult(BaseModel):
         "wrong pose, artifacts, wrong style, etc.), not generic commentary."
     )
 
+
 def analyse_image(image_generation_request: ImageGenerationRequest, image_url):
     image_agent = get_image_agent().with_structured_output(ImageAnalysisResult)
 
@@ -242,21 +272,20 @@ def analyse_image(image_generation_request: ImageGenerationRequest, image_url):
     negative_prompt = image_generation_request.negative_prompt
 
     lc_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
         {
-            "role": "system",
-            "content": SYSTEM_PROMPT
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": USER_PROMPT_TEMPLATE.format(
+                        original_prompt=prompt,
+                        original_negative_prompt=negative_prompt or "(none provided)",
+                    ),
+                },
+                {"type": "image_url", "image_url": {"url": image_url}},
+            ],
         },
-        {
-            "role": "user", "content": [
-            {
-                "type": "text", "text": USER_PROMPT_TEMPLATE.format(
-                original_prompt=prompt,
-                original_negative_prompt=negative_prompt or "(none provided)",
-            )
-            },
-            {"type": "image_url", "image_url": {"url": image_url}}
-        ]
-        }
     ]
 
     response = image_agent.invoke(lc_messages)
@@ -265,29 +294,44 @@ def analyse_image(image_generation_request: ImageGenerationRequest, image_url):
 
 def get_image_tools(localai_api: LocalAiApi):
     @tool(timeout=1200)
-    async def generate_image(image_generation_request: ImageGenerationRequest) -> ToolResult:
+    async def generate_image(
+        image_generation_request: ImageGenerationRequest,
+    ) -> ToolResult:
         """Call this tool when user request to generate image."""
         try:
-            response_object = (await localai_api.generate_image_as_task(image_generation_request)).get('output')
-            data = response_object['data']
+            response_object = (
+                await localai_api.generate_image_as_task(image_generation_request)
+            ).get("output")
+            data = response_object["data"]
 
-            content_blocks = [TextContent(text=f"Image generation completed. Generated {len(data)} image(s).", type='text')]
+            content_blocks = [
+                TextContent(
+                    text=f"Image generation completed. Generated {len(data)} image(s).",
+                    type="text",
+                )
+            ]
             for i, d in enumerate(data):
                 found = False
                 for _ in range(3):
                     try:
                         url = d["url"]
-                        content_blocks.append(dict(type='image_url', image_url=dict(url=url)))
+                        content_blocks.append(
+                            dict(type="image_url", image_url=dict(url=url))
+                        )
                         found = True
                         break
                     except ConnectError as ce:
-                        logger.error(f"Failed to retrive image from {d['url']} trying again in {1*_} second")
-                        await asyncio.sleep(1*_)
+                        logger.error(
+                            f"Failed to retrive image from {d['url']} trying again in {1 * _} second"
+                        )
+                        await asyncio.sleep(1 * _)
                 if not found:
                     raise Exception(f"Could not fetch image from {d['url']}")
 
             return ToolResult(content=content_blocks)
         except Exception as e:
-            return ToolResult(content=[TextContent(text=f"Image generation failed: {e}", type='text')])
+            return ToolResult(
+                content=[TextContent(text=f"Image generation failed: {e}", type="text")]
+            )
 
     return [generate_image]

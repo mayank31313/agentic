@@ -1,6 +1,7 @@
-import click
 import json
 import sys
+
+import click
 
 
 @click.group()
@@ -24,10 +25,10 @@ def list():
         agentic agents list
     """
     try:
-        with open('../agentic.json', 'r') as config_file:
+        with open("../agentic.json", "r") as config_file:
             config_data = json.load(config_file)
 
-        agents = config_data.get('agents', [])
+        agents = config_data.get("agents", [])
         if not agents:
             click.echo("No agents found in configuration.")
             return
@@ -35,9 +36,9 @@ def list():
         click.echo("Available Agents:")
         click.echo("=" * 50)
         for agent in agents:
-            name = agent.get('name', 'Unknown')
-            model = agent.get('model', 'Unknown')
-            tools_count = len(agent.get('tools', []))
+            name = agent.get("name", "Unknown")
+            model = agent.get("model", "Unknown")
+            tools_count = len(agent.get("tools", []))
             click.echo(f"Name: {name}")
             click.echo(f"  Model: {model}")
             click.echo(f"  Tools: {tools_count} configured")
@@ -54,8 +55,8 @@ def list():
 
 
 @agents.command()
-@click.argument('agent_name')
-@click.option('--task', '-t', help='Task description for the agent to perform')
+@click.argument("agent_name")
+@click.option("--task", "-t", help="Task description for the agent to perform")
 def run(agent_name, task):
     """Run a specific agent with an optional task.
 
@@ -79,20 +80,24 @@ def run(agent_name, task):
         from agentic.app.config import AgenticConfig
 
         # Load configuration
-        with open('../agentic.json', 'r') as config_file:
+        with open("../agentic.json", "r") as config_file:
             config_data = json.load(config_file)
 
         # Find the specified agent
         agent_config = None
-        for agent in config_data.get('agents', []):
-            if agent.get('name') == agent_name:
+        for agent in config_data.get("agents", []):
+            if agent.get("name") == agent_name:
                 agent_config = agent
                 break
 
         if not agent_config:
             click.echo(f"Agent '{agent_name}' not found in configuration.", err=True)
             click.echo(
-                "Available agents: " + ", ".join([a.get('name', 'Unknown') for a in config_data.get('agents', [])]))
+                "Available agents: "
+                + ", ".join(
+                    [a.get("name", "Unknown") for a in config_data.get("agents", [])]
+                )
+            )
             sys.exit(1)
 
         # Convert to AgenticConfig object
@@ -117,6 +122,7 @@ def run(agent_name, task):
     except Exception as e:
         click.echo(f"Error running agent: {e}", err=True)
         sys.exit(1)
+
 
 def add_agents_commands(cli):
     """Add the agents command group to the main CLI."""

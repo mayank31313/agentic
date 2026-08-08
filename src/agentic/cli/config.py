@@ -1,6 +1,8 @@
+import json
+
 import click
 from jsonpath_ng import parse
-import json
+
 from agentic import AgenticConfig
 
 
@@ -15,8 +17,8 @@ def config():
 
 
 @config.command()
-@click.argument('key_path', type=str, required=True)
-@click.argument('file', type=click.Path(exists=True), default='agentic.json')
+@click.argument("key_path", type=str, required=True)
+@click.argument("file", type=click.Path(exists=True), default="agentic.json")
 def get(key_path, file):
     """Get value of agentic config using key path.
 
@@ -33,8 +35,8 @@ def get(key_path, file):
         agentic config get telegram.bot_token
         agentic config get agents.[0].name custom_config.json
     """
-    with open(file, 'r') as config:
-        value = AgenticConfig.model_validate(json.load(config)).model_dump(mode='json')
+    with open(file, "r") as config:
+        value = AgenticConfig.model_validate(json.load(config)).model_dump(mode="json")
 
         jsonpath_expression = parse(key_path)
 
@@ -43,9 +45,15 @@ def get(key_path, file):
 
 
 @config.command()
-@click.argument('key_path', type=str, required=True)
-@click.option("--set", "sets", multiple=True, help="key=value pairs to set, repeatable", required=True)
-@click.argument('file', type=click.Path(exists=True), default='agentic.json')
+@click.argument("key_path", type=str, required=True)
+@click.option(
+    "--set",
+    "sets",
+    multiple=True,
+    help="key=value pairs to set, repeatable",
+    required=True,
+)
+@click.argument("file", type=click.Path(exists=True), default="agentic.json")
 def set(key_path, sets, file):
     """Set value at key_path for a bot config.
 
@@ -68,14 +76,14 @@ def set(key_path, sets, file):
         key, value = item.split("=", 1)
         data[key] = value
 
-    with open(file, 'r') as config:
-        value = AgenticConfig.model_validate(json.load(config)).model_dump(mode='json')
+    with open(file, "r") as config:
+        value = AgenticConfig.model_validate(json.load(config)).model_dump(mode="json")
 
     jsonpath_expression = parse(key_path)
     jsonpath_expression.update(value, data)
 
-    agentic_config_json = AgenticConfig.model_validate(value).model_dump(mode='json')
-    with open(file, 'w') as config:
+    agentic_config_json = AgenticConfig.model_validate(value).model_dump(mode="json")
+    with open(file, "w") as config:
         json.dump(agentic_config_json, config, indent=2)
 
 
@@ -91,6 +99,7 @@ def schema():
         agentic config schema
     """
     click.echo(json.dumps(AgenticConfig.model_json_schema(), indent=2))
+
 
 def add_config_commands(cli):
     """Add the config command group to the main CLI."""

@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
-
-import httpx
-from pydantic import BaseModel, Field
-from typing import Optional
 import time
+from abc import ABC, abstractmethod
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
 
 class InboundMessage(BaseModel):
     message_id: str
@@ -14,6 +14,7 @@ class InboundMessage(BaseModel):
     timestamp: float = time.time()
     raw: dict = Field(default=dict)
     metadata: dict = Field(default=dict)
+
 
 class OutboundMessage(BaseModel):
     channel: str
@@ -53,6 +54,7 @@ class ChannelAdapter(ABC):
     async def send(self, message: OutboundMessage) -> None:
         """Send a reply back out through this channel's API."""
         ...
+
 
 class AdapterRegistry:
     _adapters: dict[str, ChannelAdapter] = {}

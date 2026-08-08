@@ -10,8 +10,9 @@ def message():
     """
     pass
 
+
 @message.command()
-@click.argument('text', type=str)
+@click.argument("text", type=str)
 def add(text):
     """Send a text message.
 
@@ -28,6 +29,7 @@ def add(text):
     # TODO: Implement actual message sending logic here
     # This would typically involve calling the bot's message sending function
     click.echo("Message sent! (placeholder)")
+
 
 def add_message_group(cli):
     """Add the 'message' command group to the main CLI."""

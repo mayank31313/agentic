@@ -10,9 +10,7 @@ import scripts.proxmox_crud as proxmox
 
 def test_select_cluster_and_build_vm_endpoint():
     manifest = {
-        "clusters": [
-            {"name": "lab", "api_url": "pve.lab.example", "resources": []}
-        ]
+        "clusters": [{"name": "lab", "api_url": "pve.lab.example", "resources": []}]
     }
     assert proxmox.select_cluster(manifest, "lab")["api_url"] == "pve.lab.example"
     assert proxmox.resource_endpoint("vm", "pve-01", 101) == "/nodes/pve-01/qemu/101"
@@ -107,13 +105,12 @@ def test_load_manifest_rejects_invalid_resource_type(tmp_path: Path):
         ("https://pve.lab.example:8007", "port must be 8006"),
     ],
 )
-def test_load_manifest_rejects_invalid_api_url_values(tmp_path: Path, api_url: str, message: str):
+def test_load_manifest_rejects_invalid_api_url_values(
+    tmp_path: Path, api_url: str, message: str
+):
     manifest_path = tmp_path / "manifest.yml"
     manifest_path.write_text(
-        "clusters:\n"
-        "  - name: lab\n"
-        f"    api_url: {api_url}\n"
-        "    resources: []\n",
+        f"clusters:\n  - name: lab\n    api_url: {api_url}\n    resources: []\n",
         encoding="utf-8",
     )
 
@@ -141,5 +138,7 @@ def test_client_wraps_http_error(monkeypatch):
 
     client = proxmox.ProxmoxClient("pve.lab.example", "root@pam!automation", "secret")
 
-    with pytest.raises(RuntimeError, match=r"GET /version failed with HTTP 500: .*boom"):
+    with pytest.raises(
+        RuntimeError, match=r"GET /version failed with HTTP 500: .*boom"
+    ):
         client.request("GET", "/version")

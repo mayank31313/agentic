@@ -1,20 +1,19 @@
-from cndi.env import getContextEnvironment
-from cndi.secrets.vault import VaultSecretProvider
-from langchain.agents.middleware import AgentMiddleware
 import logging
-from cndi.annotations import Component, Bean
 
-from telegram import Bot, Message, Update, ForceReply
+from cndi.annotations import Component
+from cndi.env import getContextEnvironment
+from langchain.agents.middleware import AgentMiddleware
+from telegram import Bot, Message
 
-from telegram.ext import Application, CommandHandler, ContextTypes
-
-from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID, TELEGRAM_BOT_TOKEN_PROP
+from agentic.app.constants import TELEGRAM_BOT_DEFAULT_CHAT_ID
 
 logger = logging.getLogger(__name__)
+
 
 @Component
 class TelegramToolNotifierMiddleware(AgentMiddleware):
     """Sends a Telegram message before and after every tool call."""
+
     def __init__(self, bot: Bot):
         super().__init__()
         self.bot = bot
@@ -36,12 +35,11 @@ class TelegramToolNotifierMiddleware(AgentMiddleware):
         tool_name = request.tool_call["name"]
         tool_args = request.tool_call["args"]
         logger.info(f"🔧 Calling tool: {tool_name} Args: {tool_args}")
-        message = await self.send_telegram_message(f"🔧 Calling tool: {tool_name}\nArgs: {tool_args}")
-        response =   await handler(request)  # actually runs the tool
+        message = await self.send_telegram_message(
+            f"🔧 Calling tool: {tool_name}\nArgs: {tool_args}"
+        )
+        response = await handler(request)  # actually runs the tool
         logger.info(f"🔧 Tool Response: {response}")
         await self.delete_sent_message(message)
 
         return response
-
-
-

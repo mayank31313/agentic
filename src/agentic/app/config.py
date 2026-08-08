@@ -1,7 +1,9 @@
 import logging
 import os.path
 from typing import List, Tuple, Dict, Optional, Any, Union
+
 from pydantic import BaseModel, Field
+
 
 class FromEnv(BaseModel):
     env_key: str = Field(description="Environment variable key to fetch the value from")
@@ -16,24 +18,40 @@ class FromEnv(BaseModel):
     def __str__(self):
         return self.resolve()
 
+
 class ToolConfig(BaseModel):
-    name: str = Field(description='Tool name')
-    require_approval: bool = Field(description='If tool needs human in loop for approval')
-    approval_text: Optional[str] = Field(default=None, description="Text to show when requesting approval")
+    name: str = Field(description="Tool name")
+    require_approval: bool = Field(
+        description="If tool needs human in loop for approval"
+    )
+    approval_text: Optional[str] = Field(
+        default=None, description="Text to show when requesting approval"
+    )
+
+
 class SkillsConfig(BaseModel):
     path: str
-    virtual_path: str = Field(description="Virtual path for the skill, if different from the name")
+    virtual_path: str = Field(
+        description="Virtual path for the skill, if different from the name"
+    )
+
 
 class ModelConfig(BaseModel):
-    model: str = Field(description="Model name with provider, e.g., openai:gemma-4-e2b-it")
+    model: str = Field(
+        description="Model name with provider, e.g., openai:gemma-4-e2b-it"
+    )
     model_id: str = Field(description="Model ID for the model, e.g., gemma-4-e2b-it")
     base_url: str = Field(
-        default_factory=lambda: os.getenv("OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1")
+        default_factory=lambda: os.getenv(
+            "OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1"
+        )
     )
     api_key: Union[str, FromEnv] = Field(
-        default_factory=lambda: FromEnv(env_key="OPENAI_API_KEY"), union_mode='left_to_right'
+        default_factory=lambda: FromEnv(env_key="OPENAI_API_KEY"),
+        union_mode="left_to_right",
     )
     context_window: int = Field(default=128000)
+
 
 class AgentConfig(BaseModel):
     system_prompt_path: str
@@ -42,8 +60,13 @@ class AgentConfig(BaseModel):
     model_id: str
     tools: Optional[Tuple[ToolConfig, ...]] = Field(default_factory=tuple)
     denied_tools: Optional[Tuple[str, ...]] = Field(default_factory=tuple)
-    skills: Optional[List[SkillsConfig]] = Field(default_factory=tuple, description="List of skills path")
-    agent_model_config: Optional[ModelConfig] = Field(default=None, description="Model configuration for the agent")
+    skills: Optional[List[SkillsConfig]] = Field(
+        default_factory=tuple, description="List of skills path"
+    )
+    agent_model_config: Optional[ModelConfig] = Field(
+        default=None, description="Model configuration for the agent"
+    )
+
 
 class AgenticConfig(BaseModel):
     workspace: str
@@ -56,6 +79,7 @@ class AgenticConfig(BaseModel):
             if model.model_id == model_id:
                 return model
         return None
+
     def get_agent(self, name: str) -> Optional[AgentConfig]:
         for agent in self.agents:
             if agent.name == name:
@@ -65,11 +89,12 @@ class AgenticConfig(BaseModel):
 
 logger = logging.getLogger(__name__)
 
+
 class UpdateJsonConfigRequest(BaseModel):
     key_path: str = Field(
         ...,
         description="Dot-separated path to the field to update, e.g. 'db.host' for "
-                    "a nested key, or 'servers.0.port' for an index into a list.",
+        "a nested key, or 'servers.0.port' for an index into a list.",
     )
     value: Any = Field(..., description="The new value to set at the given key path.")
 
@@ -103,4 +128,3 @@ def set_nested(data: dict, path: str, value: Any) -> None:
         current[int(last_key)] = value
     else:
         current[last_key] = value
-

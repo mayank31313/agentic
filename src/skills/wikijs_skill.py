@@ -8,7 +8,9 @@ class WikiJsSkill:
         # Placeholder for actual API call
         return {"id": "placeholder_id", "title": title}
 
-    def update_page(self, page_id: str, title: str | None = None, content: str | None = None) -> dict:
+    def update_page(
+        self, page_id: str, title: str | None = None, content: str | None = None
+    ) -> dict:
         # Actual API call logic goes here
         print(f"Attempting to update page: {page_id}")
         # Placeholder for actual API call

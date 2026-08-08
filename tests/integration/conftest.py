@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 CRON_SCHEDULE_FILENAME = "tests/resources/cron_schedules.json"
 AGENTIC_CONFIG_FILENAME = "tests/resources/agentic.json"
 
+
 class JudgeVerdict(BaseModel):
     passed: bool = Field(description="Whether the response meets the criteria")
     reasoning: str = Field(description="Brief explanation for the verdict")
@@ -32,5 +33,6 @@ Response: {response}
 Criterias:
 {criterias}
     """
-    return ChatPromptTemplate.from_template(judge_prompt) | ChatOpenAI(model="nvidia/nemotron-3-super-120b-a12b", temperature=0).with_structured_output(JudgeVerdict)
-
+    return ChatPromptTemplate.from_template(judge_prompt) | ChatOpenAI(
+        model="nvidia/nemotron-3-super-120b-a12b", temperature=0
+    ).with_structured_output(JudgeVerdict)

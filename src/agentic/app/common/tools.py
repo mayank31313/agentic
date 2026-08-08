@@ -17,10 +17,16 @@ from agentic.app.config import AgenticConfig
 
 logger = logging.getLogger(__name__)
 
+
 class SubAgentDetails(BaseModel):
-    system_prompt: str = Field(description="System prompt instructions that agent should follow, use role play to make agent behave in certain way")
+    system_prompt: str = Field(
+        description="System prompt instructions that agent should follow, use role play to make agent behave in certain way"
+    )
     task: str = Field(description="Task to swamp subagent")
-    context: str = Field(description="Required context and information to complete the task")
+    context: str = Field(
+        description="Required context and information to complete the task"
+    )
+
 
 class ToolsRegistry:
     def __init__(self):
@@ -37,10 +43,12 @@ class ToolsRegistry:
 
         return tools
 
+
 @Bean()
 def getToolsRegistry() -> ToolsRegistry:
     registry = ToolsRegistry()
     return registry
+
 
 @tool
 def run_shell_command(command: str) -> str:
@@ -59,15 +67,16 @@ def run_shell_command(command: str) -> str:
         return f"Error running command: {e}"
 
 
-
 @Autowired()
-def set_common_tools(tool_registry: ToolsRegistry,
-                     agentic_config: AgenticConfig,
-                     agent_registry: AgentRegistry):
+def set_common_tools(
+    tool_registry: ToolsRegistry,
+    agentic_config: AgenticConfig,
+    agent_registry: AgentRegistry,
+):
     tavily_search = TavilySearch(
         max_results=5,
         topic="general",
-        tavily_api_key =  getContextEnvironment("app.tavily.api_key")
+        tavily_api_key=getContextEnvironment("app.tavily.api_key"),
     )
 
     @tool
@@ -91,7 +100,7 @@ def set_common_tools(tool_registry: ToolsRegistry,
     @tool
     def swamp_sub_agent(sub_agent_details: SubAgentDetails):
         "Tool to swamp a sub agent to reserve context"
-        main_agent_config = agentic_config.get_agent('main')
+        main_agent_config = agentic_config.get_agent("main")
         if not main_agent_config:
             raise ValueError("Main agent configuration not found in agentic config.")
 
@@ -100,20 +109,26 @@ def set_common_tools(tool_registry: ToolsRegistry,
             backend=CompositeBackend(
                 default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
                 routes={
-                    "/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),
-                    "/skills/": LocalShellBackend(root_dir="./skills", virtual_mode=True,
-                                                  env={"PATH": "/usr/bin:/bin"}),
+                    "/images/": FilesystemBackend(
+                        root_dir="./images", virtual_mode=True
+                    ),
+                    "/skills/": LocalShellBackend(
+                        root_dir="./skills",
+                        virtual_mode=True,
+                        env={"PATH": "/usr/bin:/bin"},
+                    ),
                 },
             ),
-            skills=['/skills/'],
+            skills=["/skills/"],
             system_prompt=sub_agent_details.system_prompt,
         )
 
-        messages = sub_agent.invoke(dict(
-            messages=f"""You are required to complete the task: {sub_agent_details.task}\n\nHere is the full information required to complete the task\n\n{sub_agent_details.context}"""))[
-            'messages']
+        messages = sub_agent.invoke(
+            dict(
+                messages=f"""You are required to complete the task: {sub_agent_details.task}\n\nHere is the full information required to complete the task\n\n{sub_agent_details.context}"""
+            )
+        )["messages"]
         return messages[-1]
-
 
     if agentic_config.mcpServers:
         client = MultiServerMCPClient(agentic_config.mcpServers)
@@ -121,10 +136,9 @@ def set_common_tools(tool_registry: ToolsRegistry,
         for mcp_tool in tools:
             tool_registry.register_tool(mcp_tool.name, mcp_tool)
 
-
-    tool_registry.register_tool('tavily_search', tavily_search.as_tool())
-    tool_registry.register_tool('run_shell_command', run_shell_command)
-    tool_registry.register_tool('swamp_sub_agent', swamp_sub_agent)
-    tool_registry.register_tool('list_available_tools', list_available_tools)
-    tool_registry.register_tool('send_message', send_message)
-    tool_registry.register_tool('list_registered_agents', list_registered_agents)
+    tool_registry.register_tool("tavily_search", tavily_search.as_tool())
+    tool_registry.register_tool("run_shell_command", run_shell_command)
+    tool_registry.register_tool("swamp_sub_agent", swamp_sub_agent)
+    tool_registry.register_tool("list_available_tools", list_available_tools)
+    tool_registry.register_tool("send_message", send_message)
+    tool_registry.register_tool("list_registered_agents", list_registered_agents)

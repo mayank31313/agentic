@@ -10,6 +10,7 @@ def mcp():
     """
     pass
 
+
 @mcp.command()
 def run():
     """Start the Model Context Protocol (MCP) server.
@@ -24,6 +25,7 @@ def run():
 
     click.echo("Starting MCP server...")
     run_mcp()
+
 
 def add_mcp_group(cli):
     """Add the 'mcp' command group to the main CLI."""

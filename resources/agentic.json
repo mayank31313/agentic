@@ -14,7 +14,7 @@
             "model": "openai:gemma-4-e2b-it",
             "model_id": "custom-gemma-4-e2b-it",
             "context_window": 128000,
-            "base_url": "http://localhost:8080/v1",
+            "base_url": "http://host.docker.internal:8080/v1",
             "api_key": {
                 "env_key": "NVIDIA_API_KEY"
             }
@@ -53,7 +53,7 @@
     ],
     "mcpServers": {
         "agentic_mcp": {
-            "url": "http://localhost:8082/mcp",
+            "url": "http://host.docker.internal:8082/mcp",
             "transport": "http"
         }
     }

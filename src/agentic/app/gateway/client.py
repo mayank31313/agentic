@@ -10,14 +10,11 @@ class BotClient:
         response = {
             "bot_id": self.bot_id,
             "message": message,
-            "response": "This is a mock response from the bot."
+            "response": "This is a mock response from the bot.",
         }
         return response
 
     async def get_bot_status(self) -> dict:
         # Logic to get the status of the bot
-        status = {
-            "bot_id": self.bot_id,
-            "status": "active"
-        }
+        status = {"bot_id": self.bot_id, "status": "active"}
         return status
