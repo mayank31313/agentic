@@ -1,6 +1,6 @@
-# Contributing to Agentic
+# Contributing to agentic
 
-Thanks for your interest in contributing to **Agentic**! This document explains how to set up your environment, propose changes, and submit contributions — whether directly to this repository or via a fork.
+Thanks for your interest in contributing to **agentic**! This document explains how to set up your environment, propose changes, and submit contributions — whether directly to this repository or via a fork.
 
 By contributing, you agree that your contributions will be licensed under the project's [LICENSE](LICENSE) (MIT License with Attribution Requirement), and that any fork or derivative work you publish must keep the required attribution to the original author, Mayank Shinde, and the original project.
 
@@ -125,10 +125,10 @@ Please ensure:
 
 ## Forking the project
 
-You're welcome to fork Agentic to experiment, build your own assistant, or maintain a long-term variant. If you fork or redistribute this project:
+You're welcome to fork agentic to experiment, build your own assistant, or maintain a long-term variant. If you fork or redistribute this project:
 
 1. **Keep the [LICENSE](LICENSE) file intact** in your fork.
-2. **Retain attribution** to the original author, Mayank Shinde, and the original "Agentic" project, per the license's Attribution clause — e.g. in your fork's README ("Based on / forked from Agentic by Mayank Shinde"), an "About"/"Credits" section, or your app's documentation.
+2. **Retain attribution** to the original author, Mayank Shinde, and the original "agentic" project, per the license's Attribution clause — e.g. in your fork's README ("Based on / forked from agentic by Mayank Shinde"), an "About"/"Credits" section, or your app's documentation.
 3. Clearly mark your fork as a derivative work if you rename or substantially change its purpose, so users can distinguish it from the upstream project.
 4. Consider opening a PR upstream for improvements that would benefit the original project, rather than only maintaining them privately in your fork.
 
@@ -145,7 +145,7 @@ Please open an issue on the repository's issue tracker and include:
 
 ## Attribution requirement
 
-This project is distributed under a **MIT License with an Attribution Requirement** (see [LICENSE](LICENSE)). In short: you're free to use, modify, and distribute Agentic (including in forks and derivative products), but you must credit the original author, **Mayank Shinde**, and the original **Agentic** project wherever the software or a derivative of it is used or distributed. Please read the [LICENSE](LICENSE) file for the full terms.
+This project is distributed under a **MIT License with an Attribution Requirement** (see [LICENSE](LICENSE)). In short: you're free to use, modify, and distribute agentic (including in forks and derivative products), but you must credit the original author, **Mayank Shinde**, and the original **agentic** project wherever the software or a derivative of it is used or distributed. Please read the [LICENSE](LICENSE) file for the full terms.
 
-Thank you for helping make Agentic better! 🎉
+Thank you for helping make agentic better! 🎉
 
