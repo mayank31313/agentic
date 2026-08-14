@@ -108,10 +108,8 @@ def main(
     )
     fast_server.start()
 
-    run_telegram = lambda: application.run_polling(allowed_updates=Update.ALL_TYPES)
-    telegram_thread = threading.Thread(target=run_telegram)
-    telegram_thread.start()
-    context_threads.add_thread(telegram_thread)
+    context_threads.add_thread(fast_server)
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 def run_bot():

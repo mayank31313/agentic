@@ -3,6 +3,7 @@ name = "agentic"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = { file = "LICENSE" }
 authors = [
     { name = "Mayank Shinde", email = "mayank31313@gmail.com" }
 ]
@@ -36,6 +37,7 @@ dependencies = [
     "sentencepiece>=0.2.2",
     "huggingface>=0.0.1",
     "fastapi>=0.141.1",
+    "dotenv>=0.9.9",
 ]
 
 [project.scripts]

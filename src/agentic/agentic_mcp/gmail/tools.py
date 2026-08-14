@@ -1,5 +1,6 @@
 import base64
 import os.path
+from pathlib import Path
 
 from fastmcp.tools import ToolResult, tool
 from google.auth.transport.requests import Request
@@ -49,11 +50,12 @@ class GMailTool:
     def __init__(self, credentials_path: str):
         self._creds = None
         self._creds_path = credentials_path
+        self._token_path = str(Path(credentials_path).with_name('google_creds_token.json'))
         self._init_credentials()
 
     def _init_credentials(self):
-        if os.path.exists("token.json"):
-            self._creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+        if os.path.exists(self._token_path):
+            self._creds = Credentials.from_authorized_user_file(self._token_path, SCOPES)
         if not self._creds or not self._creds.valid:
             if self._creds and self._creds.expired and self._creds.refresh_token:
                 self._creds.refresh(Request())
@@ -62,7 +64,7 @@ class GMailTool:
                     self._creds_path, SCOPES
                 )
                 self._creds = flow.run_local_server(port=0)
-            with open("token.json", "w") as token:
+            with open(self._token_path, "w") as token:
                 token.write(self._creds.to_json())
 
     def list_messages(self):

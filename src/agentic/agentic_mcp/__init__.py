@@ -30,6 +30,10 @@ def onComplete(localai_api: LocalAiApi):
 
 def main():
     """Main entry point for the agentic mcp."""
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     app = AppInitializer()
     app.componentScan("agentic.agentic_mcp")
     app.run(onComplete=onComplete)
