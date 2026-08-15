@@ -15,14 +15,13 @@ dependencies = [
     { name = "click" },
     { name = "cndi" },
     { name = "deepagents" },
-    { name = "dotenv" },
     { name = "elasticsearch" },
     { name = "fastapi" },
     { name = "fastmcp" },
     { name = "google-api-python-client" },
     { name = "google-auth-httplib2" },
     { name = "google-auth-oauthlib" },
-    { name = "huggingface" },
+    { name = "huggingface-hub" },
     { name = "hvac" },
     { name = "jinja2" },
     { name = "jsonpath-ng" },
@@ -33,6 +32,7 @@ dependencies = [
     { name = "mcp", extra = ["cli"] },
     { name = "proxmoxer" },
     { name = "pytest-repeat" },
+    { name = "python-dotenv" },
     { name = "python-telegram-bot" },
     { name = "pyyaml" },
     { name = "sentencepiece" },
@@ -57,14 +57,13 @@ requires-dist = [
     { name = "click", specifier = ">=8.4.2" },
     { name = "cndi", specifier = "==2.7.9" },
     { name = "deepagents", specifier = ">=0.6.12" },
-    { name = "dotenv", specifier = ">=0.9.9" },
     { name = "elasticsearch", specifier = ">=8.0.0" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "fastmcp", specifier = ">=3.4.4" },
     { name = "google-api-python-client", specifier = ">=2.198.0" },
     { name = "google-auth-httplib2", specifier = ">=0.4.0" },
     { name = "google-auth-oauthlib", specifier = ">=1.4.0" },
-    { name = "huggingface", specifier = ">=0.0.1" },
+    { name = "huggingface-hub", specifier = ">=0.0.1" },
     { name = "hvac", specifier = ">=2.4.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "jsonpath-ng", specifier = ">=1.8.0" },
@@ -75,6 +74,7 @@ requires-dist = [
     { name = "mcp", extras = ["cli"], specifier = ">=1.28.0" },
     { name = "proxmoxer", specifier = ">=2.3.0" },
     { name = "pytest-repeat", specifier = ">=0.9.4" },
+    { name = "python-dotenv", specifier = ">=0.9.9" },
     { name = "python-telegram-bot", specifier = ">=22.8" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "sentencepiece", specifier = ">=0.2.2" },
@@ -1008,15 +1008,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0f/4c/751061ffa58615a32c31b2d82e8482be8dd4a89154f003147acee90f2be9/httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d", size = 15943, upload-time = "2025-10-10T21:48:22.271Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/fd/6668e5aec43ab844de6fc74927e155a3b37bf40d7c3790e49fc0406b6578/httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc", size = 8960, upload-time = "2025-10-10T21:48:21.158Z" },
-]
-
-[[package]]
-name = "huggingface"
-version = "0.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9d/a4/168b574a23c1841fab5b24ecac98a88ea626ea3c746c481f79eb360c81f2/huggingface-0.0.1.tar.gz", hash = "sha256:0a2f228fd956801d68b7c6a8bef478dfa60c4b7d7eba572ea7de39ecf87e505a", size = 2320, upload-time = "2020-12-18T18:37:00.599Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f4/8c/e61fbc39c0a37140e1d4941c4af29e2d53bacf9f4559e3de24d8f4e484f0/huggingface-0.0.1-py3-none-any.whl", hash = "sha256:98a3409537557cd2fd768997ef94cab08529f86c5e106e6d54bbabdd5ee03910", size = 2455, upload-time = "2020-12-18T18:36:59.096Z" },
 ]
 
 [[package]]

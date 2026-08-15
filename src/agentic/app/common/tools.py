@@ -1,7 +1,10 @@
 import asyncio
+import json
 import logging
+import os
 import subprocess
 
+import jinja2
 from cndi.annotations import Autowired, Bean
 from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
@@ -130,7 +133,9 @@ def set_common_tools(
         return messages[-1]
 
     if agentic_config.mcpServers:
-        client = MultiServerMCPClient(agentic_config.mcpServers)
+        mcpServers = json.loads(jinja2.Template(json.dumps(agentic_config.mcpServers))
+         .render(env=os.environ))
+        client = MultiServerMCPClient(mcpServers)
         tools: list[BaseTool] = asyncio.run(client.get_tools())
         for mcp_tool in tools:
             tool_registry.register_tool(mcp_tool.name, mcp_tool)
