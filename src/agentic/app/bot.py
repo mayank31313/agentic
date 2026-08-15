@@ -8,8 +8,8 @@ from langgraph.types import Command, Interrupt
 
 from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry, get_main_agent
-from agentic.app.channels.telegram import TelegramToolNotifierMiddleware
 from agentic.app.common import InterruptEvent
+from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgentConfig
 
@@ -21,7 +21,7 @@ class AgenticBot:
     def __init__(
         self,
         agenticConfig: AgenticConfig,
-        telegram_tool_middleware: TelegramToolNotifierMiddleware,
+        telegram_tool_middleware: ToolNotifierMiddleware,
         event_bus: EventBus,
         tool_registry: ToolsRegistry,
         agent_registry: AgentRegistry,
@@ -74,8 +74,8 @@ class AgenticBot:
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
     async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict):
-
-        config = {"configurable": {"thread_id": chat_id}}
+        channel_name = channel_metadata.get("channel_name", "telegram")
+        config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}}
         if message.startswith("$decision"):
             _, decision = message.split(" ")
             output = await self.agent.ainvoke(

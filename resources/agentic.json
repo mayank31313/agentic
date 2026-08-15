@@ -55,6 +55,13 @@
         "agentic_mcp": {
             "url": "http://host.docker.internal:8082/mcp",
             "transport": "http"
+        },
+        "github": {
+            "transport": "http",
+            "url": "https://api.githubcopilot.com/mcp/",
+            "headers": {
+                "Authorization": "Bearer {{ env['GITHUB_MCP_PAT_TOKEN'] }}"
+            }
         }
     }
 }

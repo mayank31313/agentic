@@ -1,10 +1,12 @@
 import asyncio
+import uuid
 
 from websockets import connect
 
 
 async def main():
-    async with connect("ws://localhost:5000/ws/test_chat") as websocket:
+    chat_id = uuid.uuid4().__str__()
+    async with connect(f"ws://localhost:5000/ws/{chat_id}") as websocket:
         while True:
             message = "Hey"
             if message.lower() == "exit":
