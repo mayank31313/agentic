@@ -29,7 +29,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 | **Long-term memory management** | `memory_retriever.py` and `memory_compaction.py` distill daily memory logs into a condensed `MEMORY.md`, so the assistant retains high-value context without unbounded log growth. |
 | **Remote/streaming clients** | A FastAPI + WebSocket gateway (`app/gateway`) exposes the bot over HTTP/WebSocket for custom front-ends, alongside a Python WebSocket client (`websocket_client/`). |
 | **Search-augmented answers** | Tavily web search integration (`langchain-tavily`) for up-to-date, grounded answers. |
-| **Secrets management** | Secrets (bot tokens, API keys) can be sourced from HashiCorp Vault (`vault://secrets/...` references in `application.yml`) instead of plaintext config. |
+| **Secrets management** | Secrets (bot tokens, API keys) are resolved via a config-driven env provider (`env://VAR_NAME` references in `application.yml`), keeping real values out of plaintext config. |
 | **Extensible via skills & MCP** | Drop new capabilities into `src/skills/` (Markdown "skill" definitions, e.g. the `agentic-cli` skill that teaches the assistant to manage its own config) or point at additional MCP servers. |
 | **CLI for operating the bot** | The `agentic` CLI can start the bot server, inspect/edit `agentic.json` via JSONPath, list configured agents, run an agent with a one-off task, and send test messages. |
 
@@ -83,7 +83,7 @@ docker-compose.yaml     # `bot` (assistant) + `mcp` (tool server) services
 - **Web/gateway:** FastAPI + `uvicorn`, WebSockets
 - **Scheduling:** APScheduler
 - **Storage:** TinyDB, SQLAlchemy, optional Elasticsearch
-- **Secrets:** HashiCorp Vault via `hvac` and `cndi.secrets`
+- **Secrets:** environment-variable-backed provider via `cndi.secrets` (`env://VAR_NAME` references in `application.yml`)
 - **ML/audio:** `transformers`, `torch`, `soundfile`, `sentencepiece`
 - **Infra integrations:** Google API client (Gmail), Proxmoxer (Proxmox VE)
 - **Packaging/build:** `uv` (PEP 621 `pyproject.toml`, `uv_build` backend)
@@ -105,13 +105,15 @@ uv sync
 
 ### 2. Configure the assistant
 
-Edit `resources/agentic.json` to define your model(s), agent(s), skills, tool permissions, and MCP servers. Edit `resources/application.yml` for channel tokens and secrets provider settings (plaintext env vars or Vault references).
+Edit `resources/agentic.json` to define your model(s), agent(s), skills, tool permissions, and MCP servers. Edit `resources/application.yml` for channel tokens and secrets provider settings — secrets are referenced as `env://VAR_NAME` and resolved from environment variables at runtime by the env secrets provider (`secrets.provider.env.enable: true`).
 
 Minimal environment variables typically needed:
 
 ```powershell
 $env:NVIDIA_API_KEY = "..."
-$env:VAULT_TOKEN = "..."       # only if using Vault-backed secrets
+$env:TELEGRAM_BOT_TOKEN = "..."
+$env:TELEGRAM_DEFAULT_CHAT_ID = "..."
+$env:TAVILY_API_KEY = "..."
 ```
 
 ### 3. Run locally
@@ -131,6 +133,8 @@ uv run agentic message add "Hello, this is a test message"
 ### 4. Run with Docker Compose
 
 ```powershell
+Copy-Item .env.example .env
+# edit .env: set NVIDIA_API_KEY / TELEGRAM_BOT_TOKEN / TELEGRAM_DEFAULT_CHAT_ID / TAVILY_API_KEY
 docker-compose up --build
 ```
 

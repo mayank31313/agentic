@@ -59,6 +59,14 @@ uv run agentic run
 
 See the [README](README.md) for full configuration details (`resources/agentic.json`, `resources/application.yml`, environment variables, Docker Compose, etc.).
 
+### Configuring secrets
+
+Copy `.env.example` to `.env` and fill in real values (Telegram bot token,
+NVIDIA API key, Tavily API key, etc.). These are resolved at runtime by the
+env secrets provider configured in `resources/application.yml`
+(`secrets.provider.env.enable: true`, referenced there as `env://VAR_NAME`).
+Never commit `.env` or real secret values.
+
 ## Development workflow
 
 1. **Create a branch** off `main` with a descriptive name:
@@ -83,7 +91,7 @@ See the [README](README.md) for full configuration details (`resources/agentic.j
   ```
 - Keep configuration-driven behavior in `resources/agentic.json` / `resources/application.yml` rather than hardcoding values in code, consistent with the project's config-first philosophy.
 - New tools/integrations should be added as MCP servers under `src/agentic/agentic_mcp/<your_tool>/` and registered in `resources/agentic.json` under `mcpServers`, per the [README's extension guide](README.md#extending-agentic).
-- Never commit secrets, tokens, or credentials. Use `resources/application.yml` references (env vars or Vault) instead, and keep real credentials out of `credentials/` in version control.
+- Never commit secrets, tokens, or credentials. Use `resources/application.yml` `env://VAR_NAME` references resolved from environment variables instead, and keep real credentials out of `credentials/` in version control.
 
 ## Commit message conventions
 
@@ -92,7 +100,7 @@ Use clear, imperative commit messages, ideally following a lightweight [Conventi
 ```
 feat: add Slack channel adapter
 fix: correct cron schedule parsing for weekly jobs
-docs: update README with Vault secrets example
+docs: update README with env secrets provider example
 chore: bump deepagents dependency
 refactor: extract memory compaction into its own module
 test: add coverage for scheduler edge cases
