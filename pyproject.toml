@@ -38,6 +38,7 @@ dependencies = [
     "huggingface>=0.0.1",
     "fastapi>=0.141.1",
     "dotenv>=0.9.9",
+    "jinja2>=3.1.6",
 ]
 
 [project.scripts]
@@ -47,10 +48,23 @@ agentic = "agentic:main"
 requires = ["uv_build>=0.11.2,<0.12.0"]
 build-backend = "uv_build"
 
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+torchvision = [
+  { index = "pytorch-cpu" },
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
 
 [pytest]
 log_cli = true
