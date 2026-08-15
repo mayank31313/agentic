@@ -1,8 +1,13 @@
+import json
 import logging
 import os.path
 from typing import Any
 
+from cndi.annotations import Bean
+from cndi.env import getContextEnvironment
 from pydantic import BaseModel, Field
+
+from agentic.app.constants import AGENTIC_FILE_NAME_PROP
 
 
 class FromEnv(BaseModel):
@@ -85,6 +90,58 @@ class AgenticConfig(BaseModel):
             if agent.name == name:
                 return agent
         return None
+
+@Bean()
+def getAgenticConfig() -> AgenticConfig:
+    filename = getContextEnvironment(AGENTIC_FILE_NAME_PROP)
+    try:
+        if os.path.exists(filename):
+            with open(filename, "r") as config_json:
+                return AgenticConfig.model_validate(json.load(config_json))
+    except Exception as e:
+        raise e
+
+    with open(filename, "w") as config_json:
+        agentic = AgenticConfig(
+            workspace="./workspace",
+            skills=[SkillsConfig(name="superpowers", path="skills/superpowers")],
+            agents=[
+                AgentConfig(
+                    system_prompt_path="AGENTS.md",
+                    workspace_dir="./workspace",
+                    name="main",
+                    model="openai:nvidia/nemotron-3-super-120b-a12b",
+                    base_url="https://integrate.api.nvidia.com/v1",
+                    tools=tuple(
+                        [
+                            ToolConfig(
+                                name="run_shell_command",
+                                require_approval=True,
+                                approval_text="This tool needs approval to run",
+                            ),
+                            ToolConfig(name="generate_image", require_approval=False),
+                            ToolConfig(name="swamp_sub_agent", require_approval=False),
+                        ]
+                    ),
+                    denied_tools=tuple([]),
+                )
+            ],
+            mcpServers={
+                "alice_mcps": {
+                    "url": "http://host.docker.internal:8811/sse",
+                    "transport": "sse",
+                    "headers": {"Authorization": "Bearer {}"},
+                },
+                "agentic_mcp": {
+                    "url": "http://host.docker.internal:8082/mcp",
+                    "transport": "http",
+                },
+            },
+        )
+
+        json.dump(agentic.model_dump(mode="json"), fp=config_json, indent=4)
+
+    return agentic
 
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ import logging
 from cndi.annotations import Bean, Component
 from cndi.env import getContextEnvironment
 from cndi.secrets.fromenv import FromEnvProvider
-from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Message
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -20,12 +20,13 @@ from agentic.app.gateway.adapters import (
     AdapterRegistry,
     ChannelAdapter,
     InboundMessage,
-    OutboundMessage,
+    OutboundMessage, OutboundMessageReply,
 )
 from agentic.app.gateway.adapters.consts import TELEGRAM_SECRET
-from agentic.app.gateway.server import Gateway
-from agentic.app.reactions import add_reaction, remove_reaction
+from agentic.app.gateway.config import Gateway
+from agentic.app.gateway.adapters.telegram.reactions import add_reaction, remove_reaction
 
+logger = logging.getLogger(__name__)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
@@ -54,15 +55,6 @@ def get_telegram_application(env_provider: FromEnvProvider) -> Application:
 
     return application
 
-
-@Bean()
-def get_telegram_bot(application: Application) -> Bot:
-    return application.bot
-
-
-logger = logging.getLogger(__name__)
-
-
 @Component
 class TelegramAdapter(ChannelAdapter):
     name = "telegram"
@@ -70,13 +62,13 @@ class TelegramAdapter(ChannelAdapter):
     def __init__(
         self,
         application: Application,
-        gateway: Gateway,
         audio_processor: AudioProcessor,
+        gateway: Gateway
     ):
         self.application = application
         self.bot: Bot = application.bot
-        self.gateway = gateway
         self.audio_processor = audio_processor
+        self.gateway = gateway
 
         chat_id = getContextEnvironment(TELEGRAM_BOT_DEFAULT_CHAT_ID, castFunc=int)
         chat_filter = filters.Chat(chat_id=[chat_id])
@@ -166,6 +158,13 @@ class TelegramAdapter(ChannelAdapter):
             await self.gateway.deliver_to_channel(outbound_message)
         return response_text
 
+    async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
+        """Process the incoming webhook request and return an InboundMessage."""
+        if message.metadata.get("type") == "action" and message.metadata.get("document_action") == "delete":
+            success = await self.bot.delete_message(chat_id=message.chat_id, message_id=message.metadata.get("message_id"))
+            return message.to_reply(message_id=message.metadata.get("message_id"), metadata={"deleted": success})
+        return await self.send(message)
+
     async def inbound_message(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
@@ -245,10 +244,11 @@ class TelegramAdapter(ChannelAdapter):
         secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         return secret == TELEGRAM_SECRET
 
-    async def send(self, message: OutboundMessage) -> None:
-        print(f"Sending message to Telegram: {message}")
+    async def send(self, message: OutboundMessage) -> OutboundMessageReply:
+        logger.info(f"Sending message to Telegram: {message}")
         if message.metadata.get("type") == "text":
-            await self.bot.send_message(chat_id=message.chat_id, text=message.text)
+            message_response: Message = await self.bot.send_message(chat_id=message.chat_id, text=message.text)
+            return message.to_reply(str(message_response.message_id))
         elif message.metadata.get("type") == "image":
             content = message.metadata.get("content")
             with open(content.get("data"), "rb") as file:
@@ -274,3 +274,4 @@ class TelegramAdapter(ChannelAdapter):
             logger.info(
                 f"Unsupported message event_type: {message.metadata.get('event_type')} and Message: {message}"
             )
+        return None
