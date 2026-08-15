@@ -56,9 +56,6 @@ explicit = true
 torch = [
   { index = "pytorch-cpu" },
 ]
-torchvision = [
-  { index = "pytorch-cpu" },
-]
 
 
 
