@@ -69,3 +69,14 @@ MCP servers are described in `resources/agentic.json`, while channel/runtime set
 provider, tokens) live in `resources/application.yml`. Adding a new integration or scheduled job
 typically only requires registering it in these files rather than modifying the core runtime —
 see the "Extending Agentic" section of [`README.md`](README.md) for details.
+
+## Secrets resolution
+
+`resources/application.yml` enables the env secrets provider
+(`secrets.provider.env.enable: true`) and resolves secrets like the Telegram
+token and Tavily API key via `env://VAR_NAME` references, which are looked up
+from process environment variables at runtime (see `.env.example` for the
+full list). This keeps real credentials out of version control while
+remaining fully config-driven — no plaintext secrets or external secret
+stores are required.
+
