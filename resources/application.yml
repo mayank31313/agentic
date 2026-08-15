@@ -5,17 +5,13 @@ rcn:
     brokers:
       standalone:
         enable: true
-secrets:
-  provider:
-    vault:
-      enable: true
-      addr: "https://vault.internal.iorcloud.co.in/"
+secrets.provider.env.enable: true
 app:
   channels:
     telegram:
-      token: "vault://secrets/iorcloud agentic bot_token"
-      default_chat_id: "vault://secrets/iorcloud agentic chat_id"
+      token: "env://TELEGRAM_BOT_TOKEN"
+      default_chat_id: "env://TELEGRAM_DEFAULT_CHAT_ID"
   tavily:
-    api_key: "vault://secrets/iorcloud agentic tavily_api_key"
+    api_key: "env://TAVILY_API_KEY"
   agentic:
     config_path: resources/agentic.json
