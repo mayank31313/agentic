@@ -57,9 +57,6 @@ explicit = true
 torch = [
   { index = "pytorch-cpu" },
 ]
-torchvision = [
-  { index = "pytorch-cpu" },
-]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
