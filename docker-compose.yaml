@@ -1,0 +1,82 @@
+version: "3.8"
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: .dockerfile
+      platforms:
+        - linux/amd64
+    image: mayank31313/agentic
+    environment:
+      # Secrets are resolved via the env secrets provider (see
+      # resources/application.yml, "env://<VAR>" references). Populate these
+      # from a .env file (see .env.example) — never hardcode real values here.
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_DEFAULT_CHAT_ID: ${TELEGRAM_DEFAULT_CHAT_ID}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - mcp
+    volumes:
+      - ./resources:/bot/resources
+      - ./workspace:/bot/workspace
+      - ./downloads:/bot/downloads
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '2'
+          memory: 512M
+
+  mcp:
+    image: mayank31313/agentic
+    command:
+      - agentic
+      - mcp
+      - run
+    volumes:
+      - ./credentials/client_secret.json:/creds/credentials.json:ro
+      - ./credentials/google_creds_token.json:/creds/google_creds_token.json
+    environment:
+      AGENTIC_MCP_HOST: 0.0.0.0
+      AGENTIC_BOT_LOCAL_API_BASE_URL: ${AGENTIC_BOT_LOCAL_API_BASE_URL}
+      AGENTIC_BOT_LOCAL_API_IMAGE_MODEL: ${AGENTIC_BOT_LOCAL_API_IMAGE_MODEL}
+      GOOGLE_CREDENTIALS_FILE: /creds/credentials.json
+
+    ports:
+      - 8082:8811
+#  elasticsearch:
+#   image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+#   container_name: es01
+#   environment:
+#     - node.name=es01
+#     - discovery.event_type=single-node
+#     - bootstrap.memory_lock=true
+#     - xpack.security.enabled=true
+#     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+#   ulimits:
+#     memlock:
+#       soft: -1
+#       hard: -1
+#   ports:
+#     - ${ES_PORT}:9200
+#  kibana:
+#   image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+#   container_name: kibana
+#   depends_on:
+#     elasticsearch:
+#       condition: service_healthy
+#   environment:
+#     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#     - ELASTICSEARCH_USERNAME=kibana
+#     - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+#   ports:
+#     - ${KIBANA_PORT}:5601
