@@ -4,7 +4,7 @@ from fastapi import WebSocket
 from agentic.app.gateway.adapters import (
     AdapterRegistry,
     ChannelAdapter,
-    OutboundMessage,
+    OutboundMessage, OutboundMessageReply,
 )
 
 
@@ -43,5 +43,8 @@ class WebSocketsAdapter(ChannelAdapter):
         """Validate signature/secret. Return False to reject the request."""
         return True
 
+    async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
+        """Process the incoming webhook request and return an InboundMessage."""
+        ...
     async def send(self, message: OutboundMessage):
         await self.connection_manager.send_personal_message(message.chat_id, message)

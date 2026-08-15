@@ -1,8 +1,10 @@
 import time
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Union
 
 from pydantic import BaseModel, Field
+
+from agentic.app.gateway.adapters.telegram.config import TelegramMessageMetadata
 
 
 class InboundMessage(BaseModel):
@@ -12,8 +14,14 @@ class InboundMessage(BaseModel):
     user_id: str
     text: str
     timestamp: float = time.time()
-    raw: dict = Field(default=dict)
-    metadata: dict = Field(default=dict)
+    raw: dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
+
+class OutboundMessageReply(BaseModel):
+    message_id: str
+    channel: str
+    chat_id: str
+    metadata: dict = Field(default_factory=dict)
 
 
 class OutboundMessage(BaseModel):
@@ -21,8 +29,15 @@ class OutboundMessage(BaseModel):
     chat_id: str
     text: str
     reply_to_message_id: str | None = None
-    metadata: dict = Field(default=dict)
+    metadata: Union[TelegramMessageMetadata, dict] = Field(default_factory=dict, union_mode='left_to_right')
 
+    def to_reply(self, message_id: str, metadata: dict={}) -> OutboundMessageReply:
+        return OutboundMessageReply(
+            message_id=message_id,
+            channel=self.channel,
+            chat_id=self.chat_id,
+            metadata=metadata,
+        )
 
 class ChannelAdapter(ABC):
     """Every channel (Telegram, Slack, WhatsApp, future ones) implements this."""
@@ -51,24 +66,28 @@ class ChannelAdapter(ABC):
         )
 
     @abstractmethod
-    async def send(self, message: OutboundMessage) -> None:
-        """Send a reply back out through this channel's API."""
+    async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
+        """Process the incoming webhook request and return an InboundMessage."""
         ...
 
+    @abstractmethod
+    async def send(self, message: OutboundMessage) -> OutboundMessageReply:
+        """Send a reply back out through this channel's API."""
+        ...
 
 class AdapterRegistry:
     _adapters: dict[str, ChannelAdapter] = {}
 
-    @classmethod
-    def register(cls, adapter: ChannelAdapter):
-        cls._adapters[adapter.name] = adapter
+    @staticmethod
+    def register(adapter: ChannelAdapter):
+        AdapterRegistry._adapters[adapter.name] = adapter
 
-    @classmethod
-    def get(cls, name: str) -> ChannelAdapter:
-        if name not in cls._adapters:
+    @staticmethod
+    def get(name: str) -> ChannelAdapter:
+        if name not in AdapterRegistry._adapters:
             raise ValueError(f"No adapter registered for channel '{name}'")
-        return cls._adapters[name]
+        return AdapterRegistry._adapters[name]
 
-    @classmethod
-    def all(cls) -> dict[str, ChannelAdapter]:
-        return cls._adapters
+    @staticmethod
+    def all() -> dict[str, ChannelAdapter]:
+        return AdapterRegistry._adapters
