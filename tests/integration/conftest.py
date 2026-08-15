@@ -1,10 +1,13 @@
 # conftest.py
 import os
+import shutil
+import subprocess
 
 import pytest
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+from testcontainers.compose import DockerCompose
 
 CRON_SCHEDULE_FILENAME = "tests/resources/cron_schedules.json"
 AGENTIC_CONFIG_FILENAME = "tests/resources/agentic.json"
@@ -15,6 +18,28 @@ class JudgeVerdict(BaseModel):
     reasoning: str = Field(description="Brief explanation for the verdict")
     score: int = Field(description="Score from 1-5", ge=1, le=5)
 
+requires_docker = pytest.mark.skipif(
+    shutil.which("docker") is None, reason="docker not available"
+)
+
+
+@pytest.fixture(scope="module")
+def compose_stack():
+    stack = DockerCompose(
+        context=".",  # repo root, where docker-compose.yaml lives
+        compose_file_name=["docker-compose.yaml"],
+        pull=False,
+        build=False,
+        wait=True,  # blocks until healthchecks pass
+    )
+    with stack:
+        yield stack
+
+
+def scale_service(stack: DockerCompose, service: str, replicas: int) -> None:
+    """Scale a compose service up/down without recreating unrelated services."""
+    cmd = [*stack.docker_compose_command(), "up", "-d", "--no-recreate", "--scale", f"{service}={replicas}"]
+    subprocess.run(cmd, cwd=str(stack.context), check=True, capture_output=True)
 
 @pytest.fixture(autouse=True)
 def reset():

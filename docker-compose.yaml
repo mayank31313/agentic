@@ -6,7 +6,7 @@ services:
       dockerfile: .dockerfile
       platforms:
         - linux/amd64
-    image: mayank31313/agentic
+    image: ghcr.io/mayank31313/agentic
     environment:
       # Secrets are resolved via the env secrets provider (see
       # resources/application.yml, "env://<VAR>" references). Populate these
@@ -37,7 +37,7 @@ services:
           memory: 512M
 
   mcp:
-    image: mayank31313/agentic
+    image: ghcr.io/mayank31313/agentic
     command:
       - agentic
       - mcp
