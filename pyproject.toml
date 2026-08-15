@@ -15,7 +15,6 @@ dependencies = [
     "deepagents>=0.6.12",
     "elasticsearch>=8.0.0",
     "fastmcp>=3.4.4",
-    "hvac>=2.4.0",
     "jsonpath-ng>=1.8.0",
     "langchain-mcp-adapters>=0.3.0",
     "langchain-nvidia-ai-endpoints>=1.4.3",

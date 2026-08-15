@@ -40,7 +40,7 @@ When reviewing pull requests or diffs, Copilot should:
      descriptive and consistent with existing naming in the module.
 3. **Security & secrets.** Never approve code that hardcodes tokens, API
    keys, or credentials. Config-driven secrets should go through
-   `resources/application.yml` (env vars or `vault://` references), consistent
+   `resources/application.yml` (`env://VAR_NAME` references), consistent
    with the project's config-first philosophy. Flag anything committed under
    `credentials/` that looks like a real secret.
 4. **Config-first consistency.** New tools/integrations belong in
