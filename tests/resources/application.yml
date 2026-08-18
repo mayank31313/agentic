@@ -1,0 +1,11 @@
+management.context.thread.enable: true
+rcn:
+  events.enable: true
+  message:
+    brokers:
+      standalone:
+        enable: true
+secrets.provider.env.enable: true
+app:
+  agentic:
+    config_path: resources/agentic.json
