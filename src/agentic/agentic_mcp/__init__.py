@@ -30,10 +30,12 @@ def onComplete(localai_api: LocalAiApi):
     host = os.getenv("AGENTIC_MCP_HOST", "127.0.0.1")
     port = int(os.getenv("AGENTIC_MCP_PORT", "8811"))
 
-    creds_path = os.getenv("GOOGLE_CREDENTIALS_FILE")
+
     image_tools = get_image_tools(localai_api)
     add_tools(image_tools)
-    add_tools(get_gmail_tools(creds_path))
+    if "GOOGLE_CREDENTIALS_FILE" in os.environ:
+        creds_path = os.getenv("GOOGLE_CREDENTIALS_FILE")
+        add_tools(get_gmail_tools(creds_path))
     _state["ready"] = True
     asyncio.run(mcp.run_async(transport=transport, host=host, port=port))
 
