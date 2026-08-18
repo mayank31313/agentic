@@ -167,9 +167,11 @@ class TelegramAdapter(ChannelAdapter):
 
     async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
         """Process the incoming webhook request and return an InboundMessage."""
-        if message.metadata.get("type") == "action" and message.metadata.get("document_action") == "delete":
-            success = await self.bot.delete_message(chat_id=message.chat_id, message_id=message.metadata.get("message_id"))
-            return message.to_reply(message_id=message.metadata.get("message_id"), metadata={"deleted": success})
+        metadata = message.metadata if isinstance(message.metadata, dict) else message.metadata.model_dump()
+        if metadata.get("type") == "action" and metadata.get("document_action") == "delete":
+            msg_id = int(metadata.get("message_id"))
+            success = await self.bot.delete_message(chat_id=message.chat_id, message_id=msg_id)
+            return message.to_reply(message_id=str(msg_id), metadata={"deleted": success})
         return await self.send(message)
 
     async def inbound_message(
