@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          uv sync
+          uv sync --group test
           uv run pytest --log-cli-level=INFO  --cache-clear
 
       - name: Build and push image
