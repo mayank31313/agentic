@@ -74,7 +74,7 @@ Criterias:
     model = init_chat_model(
         model="openai:nvidia/nemotron-3-super-120b-a12b",
         base_url=f"https://integrate.api.nvidia.com/v1",
-        api_key="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"
+        api_key=os.environ['NVIDIA_API_KEY']
     )
 
     return ChatPromptTemplate.from_template(judge_prompt) | model.with_structured_output(JudgeVerdict)
