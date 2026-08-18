@@ -22,7 +22,7 @@ from transformers import (
     pipeline,
 )
 
-from agentic.app.config import AgentConfig, ToolConfig
+from agentic.app.config import AgentConfig, AgentToolConfig
 
 
 def read_agents_md(path: str) -> str:
@@ -114,7 +114,7 @@ def get_text_to_speech_pipeline():
 def get_main_agent(
     agent_config: AgentConfig,
     tools: list[BaseTool] = None,
-    tools_need_approval: list[ToolConfig] = None,
+    tools_need_approval: list[AgentToolConfig] = None,
     middlewares=[],
 ):
     # usage

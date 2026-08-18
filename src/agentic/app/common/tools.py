@@ -6,7 +6,6 @@ import subprocess
 
 import jinja2
 from cndi.annotations import Autowired, Bean
-from cndi.env import getContextEnvironment
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
 from langchain_core.tools import BaseTool, tool
@@ -15,7 +14,7 @@ from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
 from agentic.app.agents import AgentRegistry
-from agentic.app.config import AgenticConfig
+from agentic.app.config import AgenticConfig, ToolConfig
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +30,19 @@ class SubAgentDetails(BaseModel):
 
 
 class ToolsRegistry:
-    def __init__(self):
+    def __init__(self, agentic_config: AgenticConfig):
         self.tools = dict()
+        self.tools_config = dict((tool_config.name, tool_config) for tool_config in agentic_config.tools)
+
+    def add_tool(self, name, callback):
+        if name in self.tools_config:
+            for n, tool_config in self.tools_config.items():
+                if tool_config.enabled:
+                    func = callback(tool_config)
+                    self.register_tool(name, func)
+                    return
+        else:
+            logger.warning(f"Tool not found hence skipping {name}")
 
     def register_tool(self, name, func):
         self.tools[name] = func
@@ -47,8 +57,8 @@ class ToolsRegistry:
 
 
 @Bean()
-def getToolsRegistry() -> ToolsRegistry:
-    registry = ToolsRegistry()
+def getToolsRegistry(agentic_config: AgenticConfig) -> ToolsRegistry:
+    registry = ToolsRegistry(agentic_config)
     return registry
 
 
@@ -75,11 +85,6 @@ def set_common_tools(
     agentic_config: AgenticConfig,
     agent_registry: AgentRegistry,
 ):
-    tavily_search = TavilySearch(
-        max_results=5,
-        topic="general",
-        tavily_api_key=getContextEnvironment("app.tavily.api_key"),
-    )
 
     @tool
     def send_message(message: str) -> str:
@@ -140,7 +145,16 @@ def set_common_tools(
         for mcp_tool in tools:
             tool_registry.register_tool(mcp_tool.name, mcp_tool)
 
-    tool_registry.register_tool("tavily_search", tavily_search.as_tool())
+    def tavily_search_tool(config: ToolConfig):
+        tavily_search = TavilySearch(
+            max_results=5,
+            topic="general",
+            tavily_api_key=config.api_key.resolve(),
+        )
+        return tavily_search.as_tool()
+
+    tool_registry.add_tool("tavily_search", tavily_search_tool)
+
     tool_registry.register_tool("run_shell_command", run_shell_command)
     tool_registry.register_tool("swamp_sub_agent", swamp_sub_agent)
     tool_registry.register_tool("list_available_tools", list_available_tools)

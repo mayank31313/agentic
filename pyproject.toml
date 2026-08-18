@@ -68,14 +68,17 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+env_files=[".env"]
 markers = [
     "docker: integration tests that require a running Docker daemon and docker compose",
+    "behaviour: BDD-style scenarios verifying end-to-end agent behaviour (may call a real/judge LLM)",
 ]
 
 [dependency-groups]
 test = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pytest-bdd>=8.1.0",
     "pytest-mock>=3.15.1",
     "testcontainers>=4.15.0",
 ]

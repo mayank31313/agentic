@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from cndi.annotations import Bean, Component
+from cndi.annotations import Bean, Component, ConditionalRendering
 from cndi.env import getContextEnvironment
 from cndi.secrets.fromenv import FromEnvProvider
 from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Message
@@ -23,8 +23,8 @@ from agentic.app.gateway.adapters import (
     OutboundMessage, OutboundMessageReply,
 )
 from agentic.app.gateway.adapters.consts import TELEGRAM_SECRET
-from agentic.app.gateway.config import Gateway
 from agentic.app.gateway.adapters.telegram.reactions import add_reaction, remove_reaction
+from agentic.app.gateway.config import Gateway
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,13 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # clear_memory(chat_id)
     await update.message.reply_text("✅ Conversation memory cleared!")
 
+TELEGRAM_CHANNEL_ENABLED = "app.channels.telegram.enable"
+
+def is_telegram_channel_enabled(x=None):
+    return getContextEnvironment(TELEGRAM_CHANNEL_ENABLED, defaultValue=False, castFunc=bool)
 
 @Bean()
+@ConditionalRendering(callback=is_telegram_channel_enabled)
 def get_telegram_application(env_provider: FromEnvProvider) -> Application:
     telegram_bot_token = getContextEnvironment(TELEGRAM_BOT_TOKEN_PROP)
     # Create the Application and pass it your bot's token.
@@ -56,6 +61,7 @@ def get_telegram_application(env_provider: FromEnvProvider) -> Application:
 
     return application
 
+@ConditionalRendering(callback=is_telegram_channel_enabled)
 @Component
 class TelegramAdapter(ChannelAdapter):
     name = "telegram"
