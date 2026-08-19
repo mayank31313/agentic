@@ -9,30 +9,14 @@
             "api_key": {
                 "env_key": "NVIDIA_API_KEY"
             }
-        },
-        {
-            "model": "openai:gemma-4-e2b-it",
-            "model_id": "custom-gemma-4-e2b-it",
-            "context_window": 128000,
-            "base_url": "http://localhost:8080/v1",
-            "api_key": {
-                "env_key": "NVIDIA_API_KEY"
-            }
         }
     ],
-    "tools": [{
-        "name": "tavily_search",
-        "enabled": true,
-        "api_key": {
-            "env_key": "TAVILY_API_KEY"
-        }
-    }],
     "agents": [
         {
             "system_prompt_path": "AGENTS.md",
             "workspace_dir": "./workspace",
             "name": "main",
-            "model_id": "custom-gemma-4-e2b-it",
+            "model_id": "custom-nemotron-3-super-120b-a12b",
             "skills": [{
                 "virtual_path": "/skills/",
                 "path": "./src/skills/"
@@ -60,15 +44,8 @@
     ],
     "mcpServers": {
         "agentic_mcp": {
-            "url": "http://localhost:8082/mcp",
+            "url": "http://mcp:8811/mcp",
             "transport": "http"
-        },
-        "github": {
-            "transport": "http",
-            "url": "https://api.githubcopilot.com/mcp/",
-            "headers": {
-                "Authorization": "Bearer {{ env['GITHUB_MCP_PAT_TOKEN'] }}"
-            }
         }
     }
 }

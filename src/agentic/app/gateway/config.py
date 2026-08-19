@@ -15,7 +15,7 @@ class Gateway:
         chat_id = message.chat_id
         message_id = message.message_id
         return await self.agentic_bot.invoke_agent(
-            message.text, chat_id=chat_id, message_id=message_id, channel_metadata={}
+            message.text, chat_id=chat_id, message_id=message_id, channel_metadata=dict(channel_name=message.channel)
         )
 
     async def deliver_to_channel(self, message: OutboundMessage):
