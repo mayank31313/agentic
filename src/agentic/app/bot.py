@@ -73,8 +73,8 @@ class AgenticBot:
 
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
-    async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict):
-        channel_name = channel_metadata.get("channel_name", "telegram")
+    async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict={}):
+        channel_name = channel_metadata.get("channel_name", "websocket")
         config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}}
         if message.startswith("$decision"):
             _, decision = message.split(" ")

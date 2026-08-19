@@ -20,12 +20,13 @@ class WebSocketConnectionManager:
         if chat_id in self.active_connections:
             del self.active_connections[chat_id]
 
-    async def send_personal_message(self, chat_id: str, message: OutboundMessage):
+    async def send_personal_message(self, chat_id: str, message: OutboundMessage) -> OutboundMessageReply | None:
         if chat_id in self.active_connections:
             await self.active_connections[chat_id].send_json(
                 message.model_dump(mode="json")
             )
-
+            return message.to_reply(message_id="test_message", metadata={})
+        return None
     async def broadcast(self, message: OutboundMessage):
         for chat_id, connection in self.active_connections.items():
             await self.send_personal_message(chat_id, message)
@@ -45,6 +46,9 @@ class WebSocketsAdapter(ChannelAdapter):
 
     async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
         """Process the incoming webhook request and return an InboundMessage."""
-        ...
-    async def send(self, message: OutboundMessage):
-        await self.connection_manager.send_personal_message(message.chat_id, message)
+        metadata = message.metadata if isinstance(message.metadata, dict) else message.metadata.model_dump()
+        if metadata.get("type") == "action" and metadata.get("document_action") == "delete":
+            return message.to_reply(message_id="test_message", metadata={"deleted": False})
+        return await self.send(message)
+    async def send(self, message: OutboundMessage) -> OutboundMessageReply:
+        return await self.connection_manager.send_personal_message(message.chat_id, message)

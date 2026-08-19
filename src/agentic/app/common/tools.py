@@ -8,6 +8,7 @@ import jinja2
 from cndi.annotations import Autowired, Bean
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
@@ -87,7 +88,7 @@ def set_common_tools(
 ):
 
     @tool
-    def send_message(message: str) -> str:
+    def send_message(message: str, config: RunnableConfig) -> str:
         "Send a message to a specified channel (e.g., Telegram) and return the status."
         # Here you would implement the actual sending logic using a Telegram bot API
         # For demonstration, we'll just log the message and return a success status.
