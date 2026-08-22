@@ -1,3 +1,4 @@
+import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Union
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from agentic.app.gateway.adapters.telegram.config import TelegramMessageMetadata
 
+logger = logging.getLogger(__name__)
 
 class InboundMessage(BaseModel):
     message_id: str
@@ -81,6 +83,7 @@ class AdapterRegistry:
     @staticmethod
     def register(adapter: ChannelAdapter):
         AdapterRegistry._adapters[adapter.name] = adapter
+        logger.info(f"Registering channel {adapter.name}")
 
     @staticmethod
     def get(name: str) -> ChannelAdapter:

@@ -7,10 +7,5 @@ rcn:
         enable: true
 secrets.provider.env.enable: true
 app:
-  channels:
-    telegram:
-      enable: true
-      token: "env://TELEGRAM_BOT_TOKEN"
-      default_chat_id: "env://TELEGRAM_DEFAULT_CHAT_ID"
   agentic:
     config_path: resources/agentic.json

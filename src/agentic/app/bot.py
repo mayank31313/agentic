@@ -29,9 +29,7 @@ class AgenticBot:
         self.middelwares = [telegram_tool_middleware]
         self.max_approvals = 5
         self.agenticConfig = agenticConfig
-        self.agentConfig: AgentConfig = next(
-            filter(lambda x: x.name == "main", agenticConfig.agents)
-        )
+        self.agentConfig: AgentConfig = agenticConfig.get_agent('main')
         self.tool_registry = tool_registry
         self.agent_registry = agent_registry
         self.event_bus = event_bus
@@ -73,8 +71,8 @@ class AgenticBot:
 
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
-    async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict):
-        channel_name = channel_metadata.get("channel_name", "telegram")
+    async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict={}):
+        channel_name = channel_metadata.get("channel_name", "websocket")
         config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}}
         if message.startswith("$decision"):
             _, decision = message.split(" ")

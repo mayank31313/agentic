@@ -22,7 +22,7 @@ from transformers import (
     pipeline,
 )
 
-from agentic.app.config import AgentConfig, ToolConfig
+from agentic.app.config import AgentConfig, AgentToolConfig
 
 
 def read_agents_md(path: str) -> str:
@@ -114,17 +114,14 @@ def get_text_to_speech_pipeline():
 def get_main_agent(
     agent_config: AgentConfig,
     tools: list[BaseTool] = None,
-    tools_need_approval: list[ToolConfig] = None,
+    tools_need_approval: list[AgentToolConfig] = None,
     middlewares=[],
 ):
     # usage
     if tools_need_approval is None:
         tools_need_approval = []
-    base_prompt = read_agents_md(
-        os.path.join(agent_config.workspace_dir, agent_config.system_prompt_path)
-    )
     system_prompt = (
-        base_prompt
+        agent_config.instructions
         + "\n\nYou have access to a memory retriever tool that can search past conversations. Use it when you need to recall relevant information from past chats."
     )
 
