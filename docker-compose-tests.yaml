@@ -1,0 +1,6 @@
+services:
+  bot:
+    volumes:
+      - ./tests/resources:/bot/resources:ro
+      - ./workspace:/bot/workspace
+      - ./downloads:/bot/downloads

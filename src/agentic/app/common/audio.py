@@ -1,8 +1,10 @@
 import asyncio
 import uuid
+from abc import abstractmethod
 
 import soundfile as sf
-from cndi.annotations import Component
+from cndi.annotations import Bean
+from cndi.env import getContextEnvironment
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 
@@ -33,7 +35,7 @@ async def convert_ogg_to_mp3_async(input_path: str, output_path: str) -> None:
         raise RuntimeError(f"ffmpeg failed: {stderr.decode()}")
 
 
-async def convert_wav_to_ogg_async(input_path: str, output_path: str) -> None:
+async def _convert_wav_to_ogg_async(input_path: str, output_path: str) -> None:
     process = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -51,9 +53,20 @@ async def convert_wav_to_ogg_async(input_path: str, output_path: str) -> None:
     if process.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: {stderr.decode()}")
 
+AUDIO_PROCESSING_ENABLED = 'app.audio.processing.enabled'
 
-@Component
 class AudioProcessor:
+    @abstractmethod
+    async def summarize_audio_text(self, text: str) -> AIMessage:
+        pass
+    @abstractmethod
+    async def text_to_speech(self, text: str) -> str:
+        pass
+    @abstractmethod
+    async def speech_to_text(self, audio_path: str) -> str:
+        pass
+
+class AudioProcessorImpl(AudioProcessor):
     def __init__(self, agentic_config: AgenticConfig):
         (
             self.tts_processor,
@@ -98,8 +111,25 @@ class AudioProcessor:
 
         # Telegram voice notes require .ogg/Opus — convert before sending
         ogg_path = wav_path.replace(".wav", ".ogg")
-        await convert_wav_to_ogg_async(wav_path, ogg_path)
+        await _convert_wav_to_ogg_async(wav_path, ogg_path)
         return ogg_path
 
     async def speech_to_text(self, audio_path: str) -> str:
         return self.asr(audio_path)
+
+class NoAudioProcessor(AudioProcessor):
+    async def summarize_audio_text(self, text: str) -> AIMessage:
+        raise NotImplementedError("Audio processing is disabled.")
+
+    async def text_to_speech(self, text: str) -> str:
+        raise NotImplementedError("Audio processing is disabled.")
+
+    async def speech_to_text(self, audio_path: str) -> str:
+        raise NotImplementedError("Audio processing is disabled.")
+
+@Bean()
+def get_audio_processor(agentic_config: AgenticConfig) -> AudioProcessor:
+    if getContextEnvironment(AUDIO_PROCESSING_ENABLED, defaultValue=False, castFunc=bool):
+        return AudioProcessorImpl(agentic_config)
+    else:
+        return NoAudioProcessor()

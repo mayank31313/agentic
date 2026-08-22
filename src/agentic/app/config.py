@@ -1,13 +1,9 @@
 import json
 import logging
 import os.path
-from typing import Any
+from typing import Any, Optional
 
-from cndi.annotations import Bean
-from cndi.env import getContextEnvironment
-from pydantic import BaseModel, Field
-
-from agentic.app.constants import AGENTIC_FILE_NAME_PROP
+from pydantic import BaseModel, Field, BaseConfig
 
 
 class FromEnv(BaseModel):
@@ -24,7 +20,7 @@ class FromEnv(BaseModel):
         return self.resolve()
 
 
-class ToolConfig(BaseModel):
+class AgentToolConfig(BaseModel):
     name: str = Field(description="Tool name")
     require_approval: bool = Field(
         description="If tool needs human in loop for approval"
@@ -33,6 +29,10 @@ class ToolConfig(BaseModel):
         default=None, description="Text to show when requesting approval"
     )
 
+class ToolConfig(BaseModel):
+    name: str = Field(description="Tool name")
+    enabled: bool = Field(default=False, description="Whether the tool is enabled")
+    api_key: FromEnv = Field(default=None)
 
 class SkillsConfig(BaseModel):
     path: str
@@ -59,25 +59,47 @@ class ModelConfig(BaseModel):
 
 
 class AgentConfig(BaseModel):
-    system_prompt_path: str
+    system_prompt_path: Optional[str] = Field(None)
     workspace_dir: str
     name: str
+    description: str
     model_id: str
-    tools: tuple[ToolConfig, ...] | None = Field(default_factory=tuple)
+    tools: tuple[AgentToolConfig, ...] | None = Field(default_factory=lambda x: None if x is None else AgentToolConfig.model_validate(json.loads(x) if isinstance(x, str) else x),)
     denied_tools: tuple[str, ...] | None = Field(default_factory=tuple)
     skills: list[SkillsConfig] | None = Field(
-        default_factory=tuple, description="List of skills path"
+        default_factory=lambda x: None if x is None else SkillsConfig.model_validate(json.loads(x) if isinstance(x, str) else x), description="List of skills path"
     )
-    agent_model_config: ModelConfig | None = Field(
-        default=None, description="Model configuration for the agent"
-    )
+    agent_model_config: Optional[ModelConfig] = Field(None, description="Agent model config")
+    instructions: Optional[str] = Field(default=None)
 
+    @staticmethod
+    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+        with open(path, "r", encoding="utf-8") as agent_file:
+            config, instructions = agent_file.read().split("---")
+            configs = json.loads(config)
+            return AgentConfig(**configs, instructions=instructions,
+                               agent_model_config=agentic_config.get_model(configs.get('model_id')))
+
+    def dump(self, path):
+        skip_flags = ("system_prompt_path", "instructions", "agent_model_config")
+        file_contents = []
+        with open(path, 'w', encoding="utf-8") as file:
+            configs = self.model_dump(mode='json', exclude=set(skip_flags))
+
+            file_contents.append(json.dumps(configs, indent=2) + "\n")
+            file_contents.append("---\n")
+            file_contents.append(self.instructions)
+
+            file.writelines(file_contents)
 
 class AgenticConfig(BaseModel):
     workspace: str
-    agents: list[AgentConfig] = Field(description="List of agents")
     mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
+    tools: tuple[ToolConfig] = Field(default_factory=tuple, description="List of tools")
+
+    def get_tool(self, tool_name: str):
+        return next(filter(lambda x: x.enabled and x.name == tool_name, self.tools))
 
     def get_model(self, model_id: str) -> ModelConfig | None:
         for model in self.models:
@@ -85,64 +107,12 @@ class AgenticConfig(BaseModel):
                 return model
         return None
 
-    def get_agent(self, name: str) -> AgentConfig | None:
-        for agent in self.agents:
-            if agent.name == name:
-                return agent
-        return None
-
-@Bean()
-def getAgenticConfig() -> AgenticConfig:
-    filename = getContextEnvironment(AGENTIC_FILE_NAME_PROP)
-    try:
-        if os.path.exists(filename):
-            with open(filename, "r") as config_json:
-                return AgenticConfig.model_validate(json.load(config_json))
-    except Exception as e:
-        raise e
-
-    with open(filename, "w") as config_json:
-        agentic = AgenticConfig(
-            workspace="./workspace",
-            skills=[SkillsConfig(name="superpowers", path="skills/superpowers")],
-            agents=[
-                AgentConfig(
-                    system_prompt_path="AGENTS.md",
-                    workspace_dir="./workspace",
-                    name="main",
-                    model="openai:nvidia/nemotron-3-super-120b-a12b",
-                    base_url="https://integrate.api.nvidia.com/v1",
-                    tools=tuple(
-                        [
-                            ToolConfig(
-                                name="run_shell_command",
-                                require_approval=True,
-                                approval_text="This tool needs approval to run",
-                            ),
-                            ToolConfig(name="generate_image", require_approval=False),
-                            ToolConfig(name="swamp_sub_agent", require_approval=False),
-                        ]
-                    ),
-                    denied_tools=tuple([]),
-                )
-            ],
-            mcpServers={
-                "alice_mcps": {
-                    "url": "http://host.docker.internal:8811/sse",
-                    "transport": "sse",
-                    "headers": {"Authorization": "Bearer {}"},
-                },
-                "agentic_mcp": {
-                    "url": "http://host.docker.internal:8082/mcp",
-                    "transport": "http",
-                },
-            },
-        )
-
-        json.dump(agentic.model_dump(mode="json"), fp=config_json, indent=4)
-
-    return agentic
-
+    def get_agent(self, name: str) -> AgentConfig:
+        agent_file  = f"{self.workspace}/agents/{name}/instructions.md"
+        if os.path.exists(agent_file):
+            return AgentConfig.load(agent_file, self)
+        else:
+            raise FileNotFoundError(f"Agent {name} not found on path {agent_file}")
 
 logger = logging.getLogger(__name__)
 

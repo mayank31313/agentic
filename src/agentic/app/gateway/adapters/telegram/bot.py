@@ -1,10 +1,10 @@
 import asyncio
 import logging
 
-from cndi.annotations import Bean, Component
+from cndi.annotations import Bean, Component, ConditionalRendering
 from cndi.env import getContextEnvironment
 from cndi.secrets.fromenv import FromEnvProvider
-from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import Bot, ForceReply, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Message
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -20,11 +20,13 @@ from agentic.app.gateway.adapters import (
     AdapterRegistry,
     ChannelAdapter,
     InboundMessage,
-    OutboundMessage,
+    OutboundMessage, OutboundMessageReply,
 )
 from agentic.app.gateway.adapters.consts import TELEGRAM_SECRET
-from agentic.app.gateway.server import Gateway
-from agentic.app.reactions import add_reaction, remove_reaction
+from agentic.app.gateway.adapters.telegram.reactions import add_reaction, remove_reaction
+from agentic.app.gateway.config import Gateway
+
+logger = logging.getLogger(__name__)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -42,8 +44,13 @@ async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # clear_memory(chat_id)
     await update.message.reply_text("✅ Conversation memory cleared!")
 
+TELEGRAM_CHANNEL_ENABLED = "app.channels.telegram.enable"
+
+def is_telegram_channel_enabled(x=None):
+    return getContextEnvironment(TELEGRAM_CHANNEL_ENABLED, defaultValue=False, castFunc=bool)
 
 @Bean()
+@ConditionalRendering(callback=is_telegram_channel_enabled)
 def get_telegram_application(env_provider: FromEnvProvider) -> Application:
     telegram_bot_token = getContextEnvironment(TELEGRAM_BOT_TOKEN_PROP)
     # Create the Application and pass it your bot's token.
@@ -54,15 +61,7 @@ def get_telegram_application(env_provider: FromEnvProvider) -> Application:
 
     return application
 
-
-@Bean()
-def get_telegram_bot(application: Application) -> Bot:
-    return application.bot
-
-
-logger = logging.getLogger(__name__)
-
-
+@ConditionalRendering(callback=is_telegram_channel_enabled)
 @Component
 class TelegramAdapter(ChannelAdapter):
     name = "telegram"
@@ -70,13 +69,13 @@ class TelegramAdapter(ChannelAdapter):
     def __init__(
         self,
         application: Application,
-        gateway: Gateway,
         audio_processor: AudioProcessor,
+        gateway: Gateway
     ):
         self.application = application
         self.bot: Bot = application.bot
-        self.gateway = gateway
         self.audio_processor = audio_processor
+        self.gateway = gateway
 
         chat_id = getContextEnvironment(TELEGRAM_BOT_DEFAULT_CHAT_ID, castFunc=int)
         chat_filter = filters.Chat(chat_id=[chat_id])
@@ -166,6 +165,15 @@ class TelegramAdapter(ChannelAdapter):
             await self.gateway.deliver_to_channel(outbound_message)
         return response_text
 
+    async def invoke_webhook(self, message: OutboundMessage) -> OutboundMessageReply:
+        """Process the incoming webhook request and return an InboundMessage."""
+        metadata = message.metadata if isinstance(message.metadata, dict) else message.metadata.model_dump()
+        if metadata.get("type") == "action" and metadata.get("document_action") == "delete":
+            msg_id = int(metadata.get("message_id"))
+            success = await self.bot.delete_message(chat_id=message.chat_id, message_id=msg_id)
+            return message.to_reply(message_id=str(msg_id), metadata={"deleted": success})
+        return await self.send(message)
+
     async def inbound_message(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
@@ -245,10 +253,57 @@ class TelegramAdapter(ChannelAdapter):
         secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         return secret == TELEGRAM_SECRET
 
-    async def send(self, message: OutboundMessage) -> None:
-        print(f"Sending message to Telegram: {message}")
+    def split_message(self, text: str, limit: int = 4096) -> list[str]:
+        """
+        Split text into chunks that fit Telegram's message limit,
+        breaking on paragraph, then sentence, then word boundaries.
+        """
+        if len(text) <= limit:
+            return [text]
+
+        chunks = []
+        while text:
+            if len(text) <= limit:
+                chunks.append(text)
+                break
+
+            # Look at the slice that would fit
+            window = text[:limit]
+
+            # Try to break at the last paragraph break
+            split_at = window.rfind("\n\n")
+
+            # Otherwise try the last newline
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = window.rfind("\n")
+
+            # Otherwise try the last sentence end
+            if split_at == -1 or split_at < limit * 0.5:
+                for sep in (". ", "! ", "? "):
+                    idx = window.rfind(sep)
+                    if idx > split_at:
+                        split_at = idx + len(sep) - 1
+
+            # Otherwise try the last space (word boundary)
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = window.rfind(" ")
+
+            # Last resort: hard cut
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = limit - 1
+
+            chunks.append(text[:split_at + 1].rstrip())
+            text = text[split_at + 1:].lstrip()
+
+        return chunks
+
+    async def send(self, message: OutboundMessage) -> OutboundMessageReply:
+        logger.info(f"Sending message to Telegram: {message}")
         if message.metadata.get("type") == "text":
-            await self.bot.send_message(chat_id=message.chat_id, text=message.text)
+            message_response = None
+            for text in self.split_message(message.text):
+                message_response: Message = await self.bot.send_message(chat_id=message.chat_id, text=text)
+            return message.to_reply(str(message_response.message_id))
         elif message.metadata.get("type") == "image":
             content = message.metadata.get("content")
             with open(content.get("data"), "rb") as file:
@@ -274,3 +329,4 @@ class TelegramAdapter(ChannelAdapter):
             logger.info(
                 f"Unsupported message event_type: {message.metadata.get('event_type')} and Message: {message}"
             )
+        return None
