@@ -61,6 +61,7 @@ services:
       AGENTIC_BOT_LOCAL_API_BASE_URL: ${AGENTIC_BOT_LOCAL_API_BASE_URL}
       AGENTIC_BOT_LOCAL_API_IMAGE_MODEL: ${AGENTIC_BOT_LOCAL_API_IMAGE_MODEL}
       GOOGLE_CREDENTIALS_FILE: /creds/credentials.json
+      OPEN_WEATHER_API_KEY: ${OPEN_WEATHER_API_KEY}
     deploy:
       resources:
         limits:

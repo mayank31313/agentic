@@ -253,10 +253,56 @@ class TelegramAdapter(ChannelAdapter):
         secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         return secret == TELEGRAM_SECRET
 
+    def split_message(self, text: str, limit: int = 4096) -> list[str]:
+        """
+        Split text into chunks that fit Telegram's message limit,
+        breaking on paragraph, then sentence, then word boundaries.
+        """
+        if len(text) <= limit:
+            return [text]
+
+        chunks = []
+        while text:
+            if len(text) <= limit:
+                chunks.append(text)
+                break
+
+            # Look at the slice that would fit
+            window = text[:limit]
+
+            # Try to break at the last paragraph break
+            split_at = window.rfind("\n\n")
+
+            # Otherwise try the last newline
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = window.rfind("\n")
+
+            # Otherwise try the last sentence end
+            if split_at == -1 or split_at < limit * 0.5:
+                for sep in (". ", "! ", "? "):
+                    idx = window.rfind(sep)
+                    if idx > split_at:
+                        split_at = idx + len(sep) - 1
+
+            # Otherwise try the last space (word boundary)
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = window.rfind(" ")
+
+            # Last resort: hard cut
+            if split_at == -1 or split_at < limit * 0.5:
+                split_at = limit - 1
+
+            chunks.append(text[:split_at + 1].rstrip())
+            text = text[split_at + 1:].lstrip()
+
+        return chunks
+
     async def send(self, message: OutboundMessage) -> OutboundMessageReply:
         logger.info(f"Sending message to Telegram: {message}")
         if message.metadata.get("type") == "text":
-            message_response: Message = await self.bot.send_message(chat_id=message.chat_id, text=message.text)
+            message_response = None
+            for text in self.split_message(message.text):
+                message_response: Message = await self.bot.send_message(chat_id=message.chat_id, text=text)
             return message.to_reply(str(message_response.message_id))
         elif message.metadata.get("type") == "image":
             content = message.metadata.get("content")

@@ -120,11 +120,8 @@ def get_main_agent(
     # usage
     if tools_need_approval is None:
         tools_need_approval = []
-    base_prompt = read_agents_md(
-        os.path.join(agent_config.workspace_dir, agent_config.system_prompt_path)
-    )
     system_prompt = (
-        base_prompt
+        agent_config.instructions
         + "\n\nYou have access to a memory retriever tool that can search past conversations. Use it when you need to recall relevant information from past chats."
     )
 

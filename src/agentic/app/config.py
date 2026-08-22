@@ -1,8 +1,9 @@
+import json
 import logging
 import os.path
-from typing import Any
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, BaseConfig
 
 
 class FromEnv(BaseModel):
@@ -58,23 +59,41 @@ class ModelConfig(BaseModel):
 
 
 class AgentConfig(BaseModel):
-    system_prompt_path: str
+    system_prompt_path: Optional[str] = Field(None)
     workspace_dir: str
     name: str
+    description: str
     model_id: str
-    tools: tuple[AgentToolConfig, ...] | None = Field(default_factory=tuple)
+    tools: tuple[AgentToolConfig, ...] | None = Field(default_factory=lambda x: None if x is None else AgentToolConfig.model_validate(json.loads(x) if isinstance(x, str) else x),)
     denied_tools: tuple[str, ...] | None = Field(default_factory=tuple)
     skills: list[SkillsConfig] | None = Field(
-        default_factory=tuple, description="List of skills path"
+        default_factory=lambda x: None if x is None else SkillsConfig.model_validate(json.loads(x) if isinstance(x, str) else x), description="List of skills path"
     )
-    agent_model_config: ModelConfig | None = Field(
-        default=None, description="Model configuration for the agent"
-    )
+    agent_model_config: Optional[ModelConfig] = Field(None, description="Agent model config")
+    instructions: Optional[str] = Field(default=None)
 
+    @staticmethod
+    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+        with open(path, "r", encoding="utf-8") as agent_file:
+            config, instructions = agent_file.read().split("---")
+            configs = json.loads(config)
+            return AgentConfig(**configs, instructions=instructions,
+                               agent_model_config=agentic_config.get_model(configs.get('model_id')))
+
+    def dump(self, path):
+        skip_flags = ("system_prompt_path", "instructions", "agent_model_config")
+        file_contents = []
+        with open(path, 'w', encoding="utf-8") as file:
+            configs = self.model_dump(mode='json', exclude=set(skip_flags))
+
+            file_contents.append(json.dumps(configs, indent=2) + "\n")
+            file_contents.append("---\n")
+            file_contents.append(self.instructions)
+
+            file.writelines(file_contents)
 
 class AgenticConfig(BaseModel):
     workspace: str
-    agents: list[AgentConfig] = Field(description="List of agents")
     mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
     tools: tuple[ToolConfig] = Field(default_factory=tuple, description="List of tools")
@@ -88,11 +107,12 @@ class AgenticConfig(BaseModel):
                 return model
         return None
 
-    def get_agent(self, name: str) -> AgentConfig | None:
-        for agent in self.agents:
-            if agent.name == name:
-                return agent
-        return None
+    def get_agent(self, name: str) -> AgentConfig:
+        agent_file  = f"{self.workspace}/agents/{name}/instructions.md"
+        if os.path.exists(agent_file):
+            return AgentConfig.load(agent_file, self)
+        else:
+            raise FileNotFoundError(f"Agent {name} not found on path {agent_file}")
 
 logger = logging.getLogger(__name__)
 

@@ -43,7 +43,7 @@ def getAgenticConfig() -> AgenticConfig:
     try:
         if os.path.exists(filename):
             with open(filename, "r") as config_json:
-                return AgenticConfig.model_validate(json.load(config_json))
+                return  AgenticConfig.model_validate(json.load(config_json))
     except Exception as e:
         raise e
 

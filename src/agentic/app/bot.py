@@ -29,9 +29,7 @@ class AgenticBot:
         self.middelwares = [telegram_tool_middleware]
         self.max_approvals = 5
         self.agenticConfig = agenticConfig
-        self.agentConfig: AgentConfig = next(
-            filter(lambda x: x.name == "main", agenticConfig.agents)
-        )
+        self.agentConfig: AgentConfig = agenticConfig.get_agent('main')
         self.tool_registry = tool_registry
         self.agent_registry = agent_registry
         self.event_bus = event_bus
