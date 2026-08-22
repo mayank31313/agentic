@@ -37,14 +37,16 @@ class ToolsRegistry:
         self.tools_config = dict((tool_config.name, tool_config) for tool_config in agentic_config.tools)
 
     def add_tool(self, name, callback):
-        if name in self.tools_config:
-            for n, tool_config in self.tools_config.items():
-                if tool_config.enabled:
-                    func = callback(tool_config)
-                    self.register_tool(name, func)
-                    return
-        else:
+        tool_config = self.tools_config.get(name)
+        if not tool_config:
             logger.warning(f"Tool not found hence skipping {name}")
+            return
+        if not tool_config.enabled:
+            logger.info(f"Tool {name} is disabled; skipping registration")
+            return
+
+        func = callback(tool_config)
+        self.register_tool(name, func)
 
     def register_tool(self, name, func):
         self.tools[name] = func
