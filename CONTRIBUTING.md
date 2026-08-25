@@ -29,7 +29,8 @@ You don't have to write code to contribute:
 - **Bug reports** — clear, reproducible issues help a lot.
 - **Feature requests / ideas** — open a discussion or issue describing the use case.
 - **Documentation** — improve the README, `architecture.md`, or add examples.
-- **New skills** — add a `SKILL.md` under `src/skills/`.
+- **New skills** — add a `SKILL.md` under `src/skills/` (see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md)).
+- **New agents** — add a `workspace/agents/<name>/instructions.md` and register it in `resources/agentic.json` (see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md)).
 - **New MCP tool servers / integrations** — e.g. a new service under `src/agentic/agentic_mcp/`.
 - **New channel adapters** — e.g. Slack/Discord alongside the existing Telegram adapter.
 - **Bug fixes and features** — see open issues labeled `good first issue` or `help wanted`.
