@@ -21,12 +21,12 @@ class AgenticBot:
     def __init__(
         self,
         agenticConfig: AgenticConfig,
-        telegram_tool_middleware: ToolNotifierMiddleware,
+        tool_notifier_middleware: ToolNotifierMiddleware,
         event_bus: EventBus,
         tool_registry: ToolsRegistry,
         agent_registry: AgentRegistry,
     ):
-        self.middelwares = [telegram_tool_middleware]
+        self.middelwares = [tool_notifier_middleware]
         self.max_approvals = 5
         self.agenticConfig = agenticConfig
         self.agentConfig: AgentConfig = agenticConfig.get_agent('main')

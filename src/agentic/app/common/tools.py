@@ -16,6 +16,7 @@ from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
 from agentic.app.agents import AgentRegistry
+from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.config import AgenticConfig, ToolConfig, AgentConfig
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ def set_common_tools(
     tool_registry: ToolsRegistry,
     agentic_config: AgenticConfig,
     agent_registry: AgentRegistry,
+    tool_notifier_middleware: ToolNotifierMiddleware,
 ):
 
     @tool
@@ -198,9 +200,13 @@ def set_common_tools(
         tools = tool_registry.get_tools(list(map(lambda x: x.name, agent_config.tools)))
         agent = create_deep_agent(
             model=model,
-            backend=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+            backend=CompositeBackend(default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+                         routes={
+                             "/workspace/": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+            }),
             system_prompt=agent_config.instructions,
-            tools=tools or []
+            tools=tools or [],
+            middleware=[tool_notifier_middleware]
         )
         return agent
 

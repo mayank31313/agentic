@@ -16,7 +16,7 @@ from telegram.ext import Application
 
 from agentic import AgenticConfig
 from agentic.app.bot import AgenticBot
-from agentic.app.config import SkillsConfig, AgentConfig, AgentToolConfig
+from agentic.app.config import SkillsConfig
 from agentic.app.constants import AGENTIC_FILE_NAME_PROP
 from agentic.app.gateway.adapters.telegram.bot import is_telegram_channel_enabled
 from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
@@ -48,30 +48,14 @@ def getAgenticConfig() -> AgenticConfig:
         raise e
 
     with open(filename, "w") as config_json:
+        # NOTE: agent definitions are no longer embedded in this default
+        # config. Runtime agents live under `<workspace>/agents/<name>/
+        # instructions.md` (see `AgenticConfig.get_agent`/`list_agents`),
+        # e.g. `workspace/agents/main/instructions.md` for the default
+        # "main" agent.
         agentic = AgenticConfig(
             workspace="./workspace",
             skills=[SkillsConfig(name="superpowers", path="skills/superpowers")],
-            agents=[
-                AgentConfig(
-                    system_prompt_path="AGENTS.md",
-                    workspace_dir="./workspace",
-                    name="main",
-                    model="openai:nvidia/nemotron-3-super-120b-a12b",
-                    base_url="https://integrate.api.nvidia.com/v1",
-                    tools=tuple(
-                        [
-                            AgentToolConfig(
-                                name="run_shell_command",
-                                require_approval=True,
-                                approval_text="This tool needs approval to run",
-                            ),
-                            AgentToolConfig(name="generate_image", require_approval=False),
-                            AgentToolConfig(name="swamp_sub_agent", require_approval=False),
-                        ]
-                    ),
-                    denied_tools=tuple([]),
-                )
-            ],
             mcpServers={
                 "alice_mcps": {
                     "url": "http://host.docker.internal:8811/sse",
