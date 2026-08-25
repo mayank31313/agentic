@@ -126,20 +126,44 @@ instead of relitigating the timing.
 
 Once dates are set, lay out what needs booking and roughly when, in priority
 order (things that sell out or get pricier first). Present this as a numbered
-markdown checklist.
+markdown checklist, and include a relevant booking link for each item so the
+person can act immediately rather than having to go find the site themselves.
 
-Typical sequence:
-1. Flights (or main transport) — search for current price trends on the route if
-   the person needs real numbers, and say clearly when a figure is a rough
-   estimate vs. something you found in search.
-2. Accommodation — flag if the destination has a high-demand period requiring
-   early booking.
-3. Any must-book activities (popular tours, restaurants requiring reservations,
-   timed-entry attractions) — these usually turn up in the same searches you do
-   for Step 4.
-4. Travel insurance / visas if relevant to the destination and the traveler's
-   nationality (ask if unknown and it matters).
-5. Local transport passes or car rental.
+Typical sequence, with the kind of site to link for each:
+1. **Flights (or main transport)** — search for current price trends on the
+   route if the person needs real numbers, and say clearly when a figure is a
+   rough estimate vs. something you found in search. Link a flight search
+   aggregator such as Google Flights (google.com/travel/flights), Skyscanner
+   (skyscanner.com), or Kayak (kayak.com) — for train-heavy regions, prefer the
+   relevant rail booking site (e.g. Trainline for Europe) or Rome2Rio for
+   figuring out the best mode of transport.
+2. **Accommodation** — flag if the destination has a high-demand period
+   requiring early booking. Link Booking.com or Airbnb, and a hotel
+   metasearch like Google Hotels where useful for comparing rates.
+3. **Any must-book activities** (popular tours, restaurants requiring
+   reservations, timed-entry attractions) — these usually turn up in the same
+   searches you do for Step 4. Link the specific attraction's official ticket
+   page when your search surfaces one (official sites are usually cheaper and
+   more reliable than resellers); otherwise link a tour marketplace like
+   GetYourGuide or Viator. For restaurant reservations, link OpenTable or the
+   restaurant's own site if search turns it up.
+4. **Travel insurance / visas** if relevant to the destination and the
+   traveler's nationality (ask if unknown and it matters). Link a comparison
+   site such as Squaremouth or a well-known insurer, and the relevant
+   government e-visa portal if a visa is required — never link a third-party
+   "visa service" site over the official government one.
+5. **Local transport passes or car rental** — link the relevant transit
+   authority's pass page (e.g. a city's official metro card site) or a car
+   rental aggregator like Kayak or Rentalcars.com.
+
+Only include a link when you're confident it's the right general destination
+for that category — a stable, well-known booking site rather than something
+obscure you're not sure still exists. Don't fabricate a URL for a specific
+hotel, flight, or listing; link the general search/booking site and let the
+person search from there, or link a specific result only when it came directly
+from a `tavily_search` result you can see. Note that these are neutral
+suggestions, not endorsements — mention there are other options and the person
+should compare prices themselves before booking.
 
 Don't invent specific prices or availability. Search for current information
 when the person needs real numbers, and be explicit when something is an
