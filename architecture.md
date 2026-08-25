@@ -34,6 +34,8 @@ setup and usage instructions see [`README.md`](README.md); for contribution guid
 - **Skills** (`src/skills/`): Markdown-defined behaviors (a `SKILL.md` plus optional helper
   scripts) that the agent's skills middleware loads automatically to extend capabilities without
   changing core code.
+  See [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for how to add a
+  new agent (`workspace/agents/<name>/instructions.md` + `resources/agentic.json`) or a new skill.
 - **FastAPI/WebSocket Gateway** (`src/agentic/app/gateway/`): exposes the running bot over
   HTTP/WebSocket for custom front-ends, alongside the example client in
   `src/agentic/websocket_client/`.

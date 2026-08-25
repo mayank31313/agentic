@@ -149,7 +149,8 @@ This starts:
 ## Extending Agentic
 
 - **Add a tool/integration:** create a new MCP server under `src/agentic/agentic_mcp/<your_tool>/` and register it in `resources/agentic.json` under `mcpServers`.
-- **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically.
+- **Add an agent:** create `workspace/agents/<name>/instructions.md` and register it in `resources/agentic.json`'s `agents` array — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for the full walkthrough.
+- **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for a step-by-step guide.
 - **Add a channel:** implement a new adapter under `src/agentic/app/channels/` alongside the existing Telegram adapter.
 - **Add a scheduled job:** append an entry to `cron_schedules.json` with a cron expression, delivery target, and sub-agent definition.
 

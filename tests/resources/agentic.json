@@ -11,37 +11,6 @@
             }
         }
     ],
-    "agents": [
-        {
-            "system_prompt_path": "AGENTS.md",
-            "workspace_dir": "./workspace",
-            "name": "main",
-            "model_id": "custom-nemotron-3-super-120b-a12b",
-            "skills": [{
-                "virtual_path": "/skills/",
-                "path": "./src/skills/"
-            }],
-            "denied_tools": ["mcp-activate-profile", "mcp-add", "mcp-config-set",
-                "mcp-create-profile", "mcp-exec", "mcp-find", "mcp-remove", "execute_code"],
-            "tools": [
-                {
-                    "name": "run_shell_command",
-                    "require_approval": true,
-                    "approval_text": "This tool needs approval to run"
-                },
-                {
-                    "name": "generate_image",
-                    "require_approval": false,
-                    "approval_text": null
-                },
-                {
-                    "name": "swamp_sub_agent",
-                    "require_approval": false,
-                    "approval_text": null
-                }
-            ]
-        }
-    ],
     "mcpServers": {
         "agentic_mcp": {
             "url": "http://mcp:8811/mcp",

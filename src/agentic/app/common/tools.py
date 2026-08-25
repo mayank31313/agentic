@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import subprocess
 
 import jinja2
@@ -15,7 +16,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
-from agentic.app.agents import AgentRegistry
+from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.config import AgenticConfig, ToolConfig, AgentConfig
 
 logger = logging.getLogger(__name__)
@@ -52,12 +53,20 @@ class ToolsRegistry:
         self.tools[name] = func
         logger.debug(f"Tool Registered {name}")
 
-    def get_tools(self, tool_names: list[str]) -> list[BaseTool]:
-        tools = []
+    def get_tools(self, tool_names: list[str], deniel_tool_names=None) -> list[BaseTool]:
+        if deniel_tool_names is None:
+            deniel_tool_names = {}
+        tools = set()
         for tool_name in tool_names:
-            tools.append(self.tools[tool_name])
+            if tool_name in self.tools:
+                tools.add(tool_name)
+                continue
 
-        return tools
+            for tool in self.tools:
+                if re.match(tool_name, tool) and tool_name not in deniel_tool_names:
+                    tools.add(tool)
+
+        return list(self.tools[x] for x in tools)
 
 
 @Bean()
@@ -65,7 +74,7 @@ def getToolsRegistry(agentic_config: AgenticConfig) -> ToolsRegistry:
     registry = ToolsRegistry(agentic_config)
     mcp_servers = json.loads(jinja2.Template(json.dumps(agentic_config.mcpServers)).render(env=os.environ))
 
-    mcp_client = MultiServerMCPClient(mcp_servers)
+    mcp_client = MultiServerMCPClient(mcp_servers, tool_name_prefix=True)
     for mcp_tool in asyncio.run(mcp_client.get_tools()):
         registry.register_tool(mcp_tool.name, mcp_tool)
     return registry
@@ -123,7 +132,7 @@ def get_date_time() -> str:
 def set_common_tools(
     tool_registry: ToolsRegistry,
     agentic_config: AgenticConfig,
-    agent_registry: AgentRegistry,
+    tool_notifier_middleware: ToolNotifierMiddleware,
 ):
 
     @tool
@@ -135,14 +144,12 @@ def set_common_tools(
         return "Message sent to Telegram chat"
 
     @tool
-    def list_registered_agents() -> list[str]:
-        "List all registered agents in the registry"
-        return list(agent_registry.agents.keys())
-
-    @tool
     def list_available_tools() -> list[str]:
         "List all available tools in the registry"
-        return list(tool_registry.tools.keys())
+        tools = []
+        for key, tool in tool_registry.tools.items():
+            tools.append(f"{key}: {tool.description}")
+        return tools
 
     @tool
     def swamp_sub_agent(sub_agent_details: SubAgentDetails):
@@ -195,22 +202,59 @@ def set_common_tools(
             else model_config.api_key.resolve(),
         )
 
-        tools = tool_registry.get_tools(list(map(lambda x: x.name, agent_config.tools)))
+        tools_ = tool_registry.get_tools(list(map(lambda x: x.name, agent_config.tools)))
+        logger.info(f"Creating agent {agent_config.name} with tools: {[tool.name for tool in tools_]}")
         agent = create_deep_agent(
             model=model,
-            backend=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+            backend=CompositeBackend(default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+                         routes={
+                             "/workspace/": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+            }),
             system_prompt=agent_config.instructions,
-            tools=tools or []
+            tools=tools_ or [],
+            middleware=[tool_notifier_middleware]
         )
         return agent
 
     tool_registry.add_tool("tavily_search", tavily_search_tool)
 
+    @tool
+    def agentic_run_agentic_cli(sub_command: str) -> str:
+        """Run a command in the agentic CLI and return its output. Only allows sub_commands use --help for more information.
+
+        You MUST use this tool for ANY interaction with the Agentic Config
+        (`resources/agentic.json` / `AgenticConfig`) or an agent's config
+        (`workspace/agents/<name>/instructions.md` / `AgentConfig`) — e.g.
+        getting, setting, or otherwise inspecting or mutating config values
+        (`agentic config get/set ...`), and listing, validating, creating,
+        or updating agents (`agentic agents list/validate/write/update ...`).
+        Never edit `resources/agentic.json` or
+        `workspace/agents/<name>/instructions.md` directly with a file-write
+        tool; always go through this CLI so changes are schema-validated.
+        Run with `--help` on any sub_command to see its full usage first.
+        """
+        try:
+            result = subprocess.run(
+                f"uv run agentic {sub_command}",
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            output = result.stdout
+            if result.stderr:
+                output += f"\n[stderr]\n{result.stderr}"
+            return output.strip() or "(command produced no output)"
+        except subprocess.TimeoutExpired:
+            return "Error: command timed out after 30s"
+        except Exception as e:
+            return f"Error running command: {e}"
+
+    tool_registry.register_tool("agentic_run_agentic_cli", agentic_run_agentic_cli)
     tool_registry.register_tool("run_shell_command", run_shell_command)
     tool_registry.register_tool("swamp_sub_agent", swamp_sub_agent)
     tool_registry.register_tool("list_available_tools", list_available_tools)
     tool_registry.register_tool("send_message", send_message)
-    tool_registry.register_tool("list_registered_agents", list_registered_agents)
     tool_registry.register_tool("get_date_time", get_date_time)
 
     agents_path = os.path.join(agentic_config.workspace, 'agents')

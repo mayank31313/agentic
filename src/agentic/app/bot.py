@@ -21,12 +21,12 @@ class AgenticBot:
     def __init__(
         self,
         agenticConfig: AgenticConfig,
-        telegram_tool_middleware: ToolNotifierMiddleware,
+        tool_notifier_middleware: ToolNotifierMiddleware,
         event_bus: EventBus,
         tool_registry: ToolsRegistry,
         agent_registry: AgentRegistry,
     ):
-        self.middelwares = [telegram_tool_middleware]
+        self.middelwares = [tool_notifier_middleware]
         self.max_approvals = 5
         self.agenticConfig = agenticConfig
         self.agentConfig: AgentConfig = agenticConfig.get_agent('main')
@@ -58,9 +58,7 @@ class AgenticBot:
         )
 
         if len(tools) > 0:
-            logger.info("Available tools in context")
-            for i, t in enumerate(tools):
-                logger.info(f"{i}: {t.name}")
+            logger.info(f"Available tools in context {list(map(lambda x: x.name, tools))}")
 
         self.agent = get_main_agent(
             agent_config=self.agentConfig,

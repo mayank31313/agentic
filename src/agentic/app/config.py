@@ -73,12 +73,43 @@ class AgentConfig(BaseModel):
     instructions: Optional[str] = Field(default=None)
 
     @staticmethod
-    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+    def parse_raw_file(path) -> tuple[dict, str]:
+        """Split an `instructions.md` file into its raw JSON header dict and
+        instructions body, without validating against `AgentConfig` or
+        resolving `model_id` against any `AgenticConfig`.
+
+        Used by callers (e.g. the CLI's `agents update`) that need to read
+        a possibly-invalid existing file in order to *fix* it — unlike
+        `AgentConfig.load`, this never raises on an unknown `model_id`.
+        """
         with open(path, "r", encoding="utf-8") as agent_file:
-            config, instructions = agent_file.read().split("---")
-            configs = json.loads(config)
-            return AgentConfig(**configs, instructions=instructions,
-                               agent_model_config=agentic_config.get_model(configs.get('model_id')))
+            content = agent_file.read()
+            # Split on the *first* bare "---" only: the JSON header and the
+            # markdown body are separated by exactly one such line, but the
+            # markdown body itself may legitimately contain "---" (e.g. when
+            # documenting this very file format), so a naive split("---")
+            # would break on those.
+            if "\n---\n" in content:
+                config, instructions = content.split("\n---\n", 1)
+            else:
+                config, instructions = content.split("---", 1)
+            return json.loads(config), instructions
+
+    @staticmethod
+    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+        configs, instructions = AgentConfig.parse_raw_file(path)
+
+        model_id = configs.get("model_id")
+        model_config = agentic_config.get_model(model_id)
+        if model_config is None:
+            raise ValueError(
+                f"Agent {configs.get('name') or path!r} references model_id "
+                f"{model_id!r}, which is not defined in the agentic config's "
+                "'models' list."
+            )
+
+        return AgentConfig(**configs, instructions=instructions,
+                               agent_model_config=model_config)
 
     def dump(self, path):
         skip_flags = ("system_prompt_path", "instructions", "agent_model_config")
@@ -113,6 +144,40 @@ class AgenticConfig(BaseModel):
             return AgentConfig.load(agent_file, self)
         else:
             raise FileNotFoundError(f"Agent {name} not found on path {agent_file}")
+
+    def list_agent_names(self) -> list[str]:
+        """Discover agent names from the `<workspace>/agents/*/instructions.md` layout.
+
+        This is the single source of truth for available agents (see
+        `docs/creating-agents-and-skills.md`) — there is no separate
+        `agents` list in the JSON config.
+        """
+        agents_dir = os.path.join(self.workspace, "agents")
+        if not os.path.isdir(agents_dir):
+            return []
+
+        names = []
+        for entry in sorted(os.listdir(agents_dir)):
+            agent_dir = os.path.join(agents_dir, entry)
+            instructions_path = os.path.join(agent_dir, "instructions.md")
+            if os.path.isdir(agent_dir) and os.path.isfile(instructions_path):
+                names.append(entry)
+        return names
+
+    def list_agents(self) -> list[tuple[str, "AgentConfig | None", Exception | None]]:
+        """Load every agent found by `list_agent_names`.
+
+        Returns a list of `(name, agent_config_or_none, error_or_none)`
+        tuples so callers (e.g. the CLI) can report per-agent failures
+        without aborting the whole listing.
+        """
+        results = []
+        for name in self.list_agent_names():
+            try:
+                results.append((name, self.get_agent(name), None))
+            except Exception as e:  # noqa: BLE001 - surfaced to caller, not swallowed
+                results.append((name, None, e))
+        return results
 
 logger = logging.getLogger(__name__)
 
