@@ -4,7 +4,7 @@ import click
 from jsonpath_ng import parse
 
 from agentic import AgenticConfig
-
+import os
 
 @click.group()
 def config():
@@ -17,7 +17,7 @@ def config():
 
 @config.command()
 @click.argument("key_path", type=str, required=True)
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def get(key_path, file):
     """Get value of agentic config using key path.
 
@@ -28,7 +28,7 @@ def get(key_path, file):
                   (e.g., 'telegram.bot_token', 'agents.[0].name')
 
     OPTIONS:
-        FILE      Path to the configuration file (default: agentic.json)
+        FILE      Path to the configuration file (default: resources/agentic.json)
 
     Example:
         agentic config get telegram.bot_token
@@ -52,7 +52,7 @@ def get(key_path, file):
     help="key=value pairs to set, repeatable",
     required=True,
 )
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def set(key_path, sets, file):
     """Set value at key_path for a bot config.
 

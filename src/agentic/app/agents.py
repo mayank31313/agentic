@@ -161,7 +161,10 @@ def get_main_agent(
         backend=CompositeBackend(
             default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
             routes={
-                "/skills/": FilesystemBackend(root_dir="src/skills", virtual_mode=True)
+                "/skills/": FilesystemBackend(root_dir="src/skills", virtual_mode=True),
+                "/resources/": FilesystemBackend(
+                    root_dir="resources", virtual_mode=True
+                ),
             },
         ),
         skills=agent_skill_paths,

@@ -58,9 +58,7 @@ class AgenticBot:
         )
 
         if len(tools) > 0:
-            logger.info("Available tools in context")
-            for i, t in enumerate(tools):
-                logger.info(f"{i}: {t.name}")
+            logger.info(f"Available tools in context {list(map(lambda x: x.name, tools))}")
 
         self.agent = get_main_agent(
             agent_config=self.agentConfig,

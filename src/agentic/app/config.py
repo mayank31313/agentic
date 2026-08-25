@@ -73,7 +73,15 @@ class AgentConfig(BaseModel):
     instructions: Optional[str] = Field(default=None)
 
     @staticmethod
-    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+    def parse_raw_file(path) -> tuple[dict, str]:
+        """Split an `instructions.md` file into its raw JSON header dict and
+        instructions body, without validating against `AgentConfig` or
+        resolving `model_id` against any `AgenticConfig`.
+
+        Used by callers (e.g. the CLI's `agents update`) that need to read
+        a possibly-invalid existing file in order to *fix* it — unlike
+        `AgentConfig.load`, this never raises on an unknown `model_id`.
+        """
         with open(path, "r", encoding="utf-8") as agent_file:
             content = agent_file.read()
             # Split on the *first* bare "---" only: the JSON header and the
@@ -85,9 +93,23 @@ class AgentConfig(BaseModel):
                 config, instructions = content.split("\n---\n", 1)
             else:
                 config, instructions = content.split("---", 1)
-            configs = json.loads(config)
-            return AgentConfig(**configs, instructions=instructions,
-                               agent_model_config=agentic_config.get_model(configs.get('model_id')))
+            return json.loads(config), instructions
+
+    @staticmethod
+    def load(path, agentic_config: AgenticConfig) -> AgentConfig:
+        configs, instructions = AgentConfig.parse_raw_file(path)
+
+        model_id = configs.get("model_id")
+        model_config = agentic_config.get_model(model_id)
+        if model_config is None:
+            raise ValueError(
+                f"Agent {configs.get('name') or path!r} references model_id "
+                f"{model_id!r}, which is not defined in the agentic config's "
+                "'models' list."
+            )
+
+        return AgentConfig(**configs, instructions=instructions,
+                               agent_model_config=model_config)
 
     def dump(self, path):
         skip_flags = ("system_prompt_path", "instructions", "agent_model_config")

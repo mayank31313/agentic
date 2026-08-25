@@ -1,7 +1,6 @@
 import json
-import os
 import sys
-
+import os
 import click
 
 
@@ -25,7 +24,7 @@ def _load_agentic_config(file):
 
 
 @agents.command()
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def list(file):
     """List all available agents.
 
@@ -159,7 +158,7 @@ def _build_and_validate_agent_config(agentic_config, agent_name, config_data, in
     required=True,
     help="Path to a Markdown file with the system prompt body, or a literal string.",
 )
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def write(agent_name, config_source, instructions_source, file):
     """Write and validate a new agent's instructions.md file.
 
@@ -263,7 +262,7 @@ def write(agent_name, config_source, instructions_source, file):
     default=None,
     help="Path to a Markdown file, or a literal string, to replace the system prompt body.",
 )
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def update(agent_name, config_source, instructions_source, file):
     """Edit and re-validate an existing agent's instructions.md file.
 
@@ -314,16 +313,17 @@ def update(agent_name, config_source, instructions_source, file):
         )
         sys.exit(1)
 
-    try:
-        current_agent_config = agentic_config.get_agent(agent_name)
-    except Exception as e:
-        click.echo(f"Existing '{agent_path}' fails to load, refusing to update: {e}", err=True)
-        sys.exit(1)
+    # Read the raw file rather than `agentic_config.get_agent(...)` so an
+    # existing agent with an invalid `model_id` (e.g. one that doesn't match
+    # any entry in the agentic config's 'models' list) can still be repaired
+    # via `--config`, instead of `update` refusing to touch it.
+    from agentic.app.config import AgentConfig
 
-    config_data = current_agent_config.model_dump(
-        mode="json", exclude={"system_prompt_path", "instructions", "agent_model_config"}
-    )
-    instructions_text = current_agent_config.instructions
+    try:
+        config_data, instructions_text = AgentConfig.parse_raw_file(agent_path)
+    except Exception as e:
+        click.echo(f"Existing '{agent_path}' fails to parse, refusing to update: {e}", err=True)
+        sys.exit(1)
 
     if config_source is not None:
         config_text = _resolve_text(config_source)
@@ -365,7 +365,7 @@ def update(agent_name, config_source, instructions_source, file):
 
 @agents.command(name="validate")
 @click.argument("agent_name")
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def validate(agent_name, file):
     """Validate an existing agent's instructions.md file.
 
@@ -400,6 +400,9 @@ def validate(agent_name, file):
         sys.exit(1)
 
     try:
+        # `AgenticConfig.get_agent` -> `AgentConfig.load` already fails fast
+        # with a clear error if `model_id` isn't defined in the agentic
+        # config's 'models' list, so no separate model_id check is needed here.
         agent_config = agentic_config.get_agent(agent_name)
     except Exception as e:
         click.echo(f"Validation FAILED for '{agent_path}':", err=True)
@@ -411,8 +414,6 @@ def validate(agent_name, file):
         errors.append(
             f"'name' field ({agent_config.name!r}) does not match directory name ({agent_name!r})."
         )
-    if agentic_config.get_model(agent_config.model_id) is None:
-        errors.append(f"model_id '{agent_config.model_id}' is not defined in {file}'s 'models' list.")
     if not agent_config.instructions or not agent_config.instructions.strip():
         errors.append("System prompt body (after the '---' separator) is empty.")
 
@@ -433,7 +434,7 @@ def validate(agent_name, file):
 @agents.command()
 @click.argument("agent_name")
 @click.option("--task", "-t", help="Task description for the agent to perform")
-@click.argument("file", type=click.Path(exists=True), default="agentic.json")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
 def run(agent_name, task, file):
     """Run a specific agent with an optional task.
 
@@ -443,7 +444,7 @@ def run(agent_name, task, file):
     ARGUMENTS:
         AGENT_NAME  Name of the agent to run (must exist as
                     `<workspace>/agents/<agent_name>/instructions.md`)
-        FILE        Path to the agentic config file (default: agentic.json)
+        FILE        Path to the agentic config file (default: resources/agentic.json)
 
     OPTIONS:
         --task, -t  Task description for the agent to perform
