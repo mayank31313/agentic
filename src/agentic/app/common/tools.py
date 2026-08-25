@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 
 import jinja2
@@ -218,6 +219,8 @@ def set_common_tools(
 
     tool_registry.add_tool("tavily_search", tavily_search_tool)
 
+    AGENTIC_CLI_GROUPS = {"agents", "config", "mcp", "message", "run"}
+
     @tool
     def agentic_run_agentic_cli(sub_command: str) -> str:
         """Run a command in the agentic CLI and return its output. Only allows sub_commands use --help for more information.
@@ -232,14 +235,45 @@ def set_common_tools(
         `workspace/agents/<name>/instructions.md` directly with a file-write
         tool; always go through this CLI so changes are schema-validated.
         Run with `--help` on any sub_command to see its full usage first.
+
+        IMPORTANT — command groups are PLURAL: `agents`, `config`, `mcp`,
+        `message`. The agent commands are `agentic agents write/update/
+        validate/list/run/schema`. There is NO `agentic agent ...`
+        (singular) command; do not guess that form.
+
+        IMPORTANT — quoting: `sub_command` is parsed with POSIX/bash-style
+        shell quoting (via `shlex`), NOT the host OS shell, and is then
+        executed directly as an argument list (no shell involved). Always
+        quote JSON payloads with single quotes exactly like a bash command
+        line, e.g.:
+
+            agents write weather_reporter --config '{"workspace_dir": "./workspace", "name": "weather_reporter", "description": "...", "model_id": "..."}' --instructions '# Weather Reporter\\n\\nYou are ...'
+
+        This is interpreted the same way regardless of the underlying OS,
+        so quoting rules never need to change between platforms.
         """
         try:
+            args = shlex.split(sub_command, posix=True)
+        except ValueError as e:
+            return f"Error: sub_command has unbalanced quotes and could not be parsed: {e}"
+
+        if not args:
+            return "Error: sub_command is empty."
+
+        if args[0] not in AGENTIC_CLI_GROUPS:
+            return (
+                f"Error: unknown command group '{args[0]}'. Valid top-level "
+                f"groups are: {', '.join(sorted(AGENTIC_CLI_GROUPS))} (note: "
+                "it is 'agents' plural, not 'agent')."
+            )
+
+        try:
             result = subprocess.run(
-                f"uv run agentic {sub_command}",
-                shell=True,
+                ["uv", "run", "agentic", *args],
+                shell=False,
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             output = result.stdout
             if result.stderr:
@@ -247,6 +281,8 @@ def set_common_tools(
             return output.strip() or "(command produced no output)"
         except subprocess.TimeoutExpired:
             return "Error: command timed out after 30s"
+        except FileNotFoundError as e:
+            return f"Error: could not locate the 'uv' executable on PATH: {e}"
         except Exception as e:
             return f"Error running command: {e}"
 

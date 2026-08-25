@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 
 from agentic.agentic_mcp.gmail.tools import get_gmail_tools
 from agentic.agentic_mcp.openweather.tools import get_weather_tools
+from agentic.agentic_mcp.pdf_parser.tools import get_pdf_parser_tools
 from agentic.agentic_mcp.stable_diffusion.tools import LocalAiApi, get_image_tools
 
 mcp = FastMCP("Agentic MCP")
@@ -35,6 +36,7 @@ def onComplete(localai_api: LocalAiApi):
     image_tools = get_image_tools(localai_api)
     add_tools(image_tools)
     add_tools(get_weather_tools())
+    add_tools(get_pdf_parser_tools())
 
     if "GOOGLE_CREDENTIALS_FILE" in os.environ:
         creds_path = os.getenv("GOOGLE_CREDENTIALS_FILE")
