@@ -24,6 +24,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 | **Email automation** | Gmail MCP tools let the assistant read/send email using Google API credentials (OAuth token stored under `credentials/`). |
 | **Home-lab / infrastructure control** | Proxmox MCP tools let the assistant inspect and manage VMs/containers on a Proxmox hypervisor. |
 | **Image generation** | Stable Diffusion MCP tools plus a `generate_image` tool let the assistant create images on request (local or remote SD backend). |
+| **PDF parsing** | `pdf_parser` MCP tools (`extract_pdf_text`, `extract_pdf_metadata`, `extract_pdf_text_from_url`) let the assistant read text/metadata from local or remote PDF files. |
 | **Text-to-speech / audio** | `transformers`, `torch`, `soundfile`, and `sentencepiece` support local TTS pipelines (see `downloads/` for generated audio samples). |
 | **Scheduled / recurring tasks (cron)** | An APScheduler-backed cron subsystem (`cron_schedules.json`) runs background sub-agents on a schedule — e.g. hourly memory compaction that summarizes the day's activity and reports back over Telegram. |
 | **Long-term memory management** | `memory_retriever.py` and `memory_compaction.py` distill daily memory logs into a condensed `MEMORY.md`, so the assistant retains high-value context without unbounded log growth. |
