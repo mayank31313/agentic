@@ -38,7 +38,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 
 ```
 [Telegram / WebSocket clients]
-            │
+            │   
             ▼
      [Channel Adapter]  ──▶  [Core AI Agent Engine] ──▶ [MCP Tool Servers: Gmail, Proxmox, Stable Diffusion, ...]
             │                       │
