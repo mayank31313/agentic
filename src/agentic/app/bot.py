@@ -12,6 +12,7 @@ from agentic.app.common import InterruptEvent
 from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgentConfig
+from agentic.app.observability import get_langfuse_handler
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class AgenticBot:
         self.event_bus = event_bus
         self.agent = None
         self.content_ids = set()
-
+        self.langfuse_handler = get_langfuse_handler()
         if self.agentConfig.agent_model_config is None:
             self.agentConfig.agent_model_config = next(
                 filter(
@@ -71,7 +72,8 @@ class AgenticBot:
 
     async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict={}):
         channel_name = channel_metadata.get("channel_name", "websocket")
-        config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}}
+
+        config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}, "callbacks": [self.langfuse_handler]}
         if message.startswith("$decision"):
             _, decision = message.split(" ")
             output = await self.agent.ainvoke(
