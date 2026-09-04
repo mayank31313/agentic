@@ -2,7 +2,7 @@
 
 This guide walks through the current, code-verified steps for adding a new
 **agent** and a new **skill** to Agentic. It complements
-[`architecture.md`](../architecture.md) and the "Extending Agentic" section
+[`architecture.md`](architecture.md) and the "Extending Agentic" section
 of [`README.md`](../README.md); read those first for the high-level
 component overview.
 
@@ -23,6 +23,7 @@ component overview.
   - [1. Layout and frontmatter](#1-layout-and-frontmatter)
   - [2. Worked example: reusing `agentic-cli`'s shape](#2-worked-example-reusing-agentic-clis-shape)
   - [3. Wiring and verification](#3-wiring-and-verification)
+- [Agent-authored custom tools](#agent-authored-custom-tools)
 - [Known limitations](#known-limitations)
 
 ---
@@ -119,6 +120,18 @@ written if validation fails. To edit an existing agent, use
 `agentic agents update <name> [--config ...] [--instructions ...]`
 instead, which shallow-merges `--config` into the current header and/or
 replaces the instructions body, re-validating before overwriting.
+
+**Both `--config` and `--instructions` replace, not partially patch,
+their content** — `--config` shallow-merges top-level keys only (so a
+list field like `tools`/`denied_tools`/`skills` is replaced wholesale,
+not appended to), and `--instructions` always replaces the entire
+system-prompt body, never a diff. To make a targeted edit (add one tool,
+tweak one paragraph) without losing the rest of the file, first run
+`agentic agents show <name>` — a read-only command that prints the
+current JSON header and instructions body exactly as stored, without
+validating or writing anything — copy the parts you're keeping, apply
+just the requested change, and pass the *complete* result to
+`--config`/`--instructions`.
 
 ### 3. Verify
 
@@ -250,6 +263,68 @@ troubleshooting.
 
 ---
 
+## Agent-authored custom tools
+
+Beyond agents and skills, an agent can author a brand-new **tool** at
+runtime via the `create_custom_tool` tool
+(`agentic.app.common.tools`/`agentic.app.common.custom_tools`), for cases
+where no existing tool, MCP server, or sub-agent covers a need. This is
+gated, not free-form code execution:
+
+- **Two kinds**: `kind="python"` — a stdlib-only script (no
+  file/network/`os`/`subprocess` access), statically checked with an
+  import/name allow-list before it's even written to disk, then executed
+  out-of-process (`uv run python ...`) with a timeout. `kind="docker"` — a
+  Dockerfile + entrypoint, built into an image and run via
+  `docker run --rm --network=none` (network access must be explicitly
+  requested), for tools that need extra dependencies or stronger
+  isolation.
+- **Files live under `workspace/custom_tools/<name>/`** — never under
+  `src/`, so agent-authored code never touches the app's own source tree.
+- **Two approval gates**: creating a tool (`create_custom_tool` itself
+  always requires human approval), and *every call* to a newly created
+  tool also requires approval until a human explicitly reviews it
+  (`agentic tools custom inspect <name>`) and runs
+  `agentic tools custom approve <name>`. This is enforced by giving both
+  `create_custom_tool` and `update_custom_tool` `require_approval: true`
+  in the calling agent's `instructions.md` (see `workspace/agents/main/
+  instructions.md`), plus `AgenticBot.initialise_agent` separately gating
+  any *unapproved* custom tool by name regardless of that config.
+- **Editing an existing custom tool**: an agent (or a human) can revise a
+  previously created tool with the `update_custom_tool` tool /
+  `agentic tools custom edit <name>` CLI command — change its
+  description, argument schema, timeout, network access, and/or replace
+  its full source (never a diff/patch — the new file entirely replaces
+  the old one), all read from a workspace file path exactly like
+  `create_custom_tool`. You cannot change a tool's `kind` or `name` this
+  way (remove and re-create it instead). **Any** edit — even
+  metadata-only — resets the tool's approval flag back to unapproved, so
+  it requires a fresh human review before it can run unattended again.
+- **Picking up new/approved tools in a running bot**: `agentic tools
+  reload` hits the gateway's `POST /admin/tools/reload` endpoint, which
+  re-scans MCP servers, workspace sub-agents, and custom tools, then
+  rebuilds the compiled agent graph. This drops in-flight conversation
+  state (a fresh in-memory checkpointer is created), so prefer running it
+  between conversations rather than mid-task.
+- **Fully blocking an agent from this capability**: add
+  `"create_custom_tool"` and/or `"update_custom_tool"` to that agent's
+  `denied_tools` in its `instructions.md` (alongside `execute_code`), the
+  same way any other tool is denied.
+
+Management commands:
+
+```bash
+agentic tools custom list                 # list custom tools + approval status
+agentic tools custom inspect <name>       # print spec + generated source/Dockerfile
+agentic tools custom edit <name> [opts]   # update description/args/timeout/source; resets approval
+agentic tools custom approve <name>       # lift the per-call approval gate
+agentic tools custom remove <name>        # delete a custom tool's files
+agentic tools reload                      # apply changes to a running bot
+```
+
+
+---
+
 ## Known limitations
 
 These are current, observed gaps in the tooling — call them out rather
@@ -264,9 +339,15 @@ than working around them silently:
 - **`agentic-cli`'s skill file is named `SKILLS.md`**, not `SKILL.md` —
   inconsistent with the spec other skills in this repo follow. Don't copy
   that filename convention for new skills.
+- **`agentic tools reload` resets conversation state.** Rebuilding the
+  compiled agent graph to pick up new/approved tools creates a fresh
+  in-memory checkpointer, so any in-flight conversation on that agent is
+  lost. There is currently no persistent (e.g. SQLite/Postgres)
+  checkpointer wired in — a good follow-up before relying on frequent
+  reloads in production.
 
 If you fix any of these, update this document and
-[`README.md`](../README.md)/[`architecture.md`](../architecture.md)
+[`README.md`](../README.md)/[`architecture.md`](architecture.md)
 alongside the code change, per the project's config-first / docs-in-sync
 philosophy.
 

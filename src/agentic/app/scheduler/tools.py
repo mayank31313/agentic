@@ -22,27 +22,7 @@ class SubAgentConfig(BaseModel):
 
     agent_name: str = Field(
         ...,
-        description="Registered subagent type/name, e.g. 'research_agent', 'support_agent'.",
-    )
-    tools: list[str] = Field(
-        default_factory=tuple,
-        description="List tools required to execute the task. Use list_available_tools to see available tools.",
-    )
-    system_prompt: str = Field(
-        description="Override system prompt. If None, agent's default is used."
-    )
-
-    share_session: bool = Field(
-        default=False,
-        description="If True, the subagent is given the originating session_id and "
-        "may load/append to shared conversation context. If False, the "
-        "subagent always runs with a fresh, isolated context.",
-    )
-    session_id: str | None = Field(
-        default=None,
-        description="Identifier for the shared session/thread to attach to when "
-        "share_session=True. If not provided but share_session=True, "
-        "the cron schedule's own id is used as the session_id.",
+        description="Registered agent name, use agentic cli to list agents and identify the exact agent name",
     )
 
 

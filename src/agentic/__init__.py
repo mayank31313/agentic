@@ -5,6 +5,7 @@ from agentic.cli.agents import add_agents_commands
 from agentic.cli.config import add_config_commands
 from agentic.cli.mcp import add_mcp_group
 from agentic.cli.message import add_message_group
+from agentic.cli.tools import add_tools_commands
 
 
 @click.group()
@@ -41,6 +42,7 @@ def main():
     add_mcp_group(cli)
     add_agents_commands(cli)
     add_config_commands(cli)
+    add_tools_commands(cli)
     cli()
 
 

@@ -11,6 +11,7 @@ name = "agentic"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "alembic" },
     { name = "apscheduler" },
     { name = "click" },
     { name = "cndi" },
@@ -31,6 +32,7 @@ dependencies = [
     { name = "langfuse" },
     { name = "mcp", extra = ["cli"] },
     { name = "proxmoxer" },
+    { name = "pydantic" },
     { name = "pypdf" },
     { name = "pytest-repeat" },
     { name = "python-dotenv" },
@@ -56,6 +58,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", specifier = ">=1.13.0" },
     { name = "apscheduler", specifier = ">=3.11.2" },
     { name = "click", specifier = ">=8.4.2" },
     { name = "cndi", specifier = "==2.7.9" },
@@ -76,6 +79,7 @@ requires-dist = [
     { name = "langfuse", specifier = ">=4.14.5" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.28.0" },
     { name = "proxmoxer", specifier = ">=2.3.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pypdf", specifier = ">=6.15.0" },
     { name = "pytest-repeat", specifier = ">=0.9.4" },
     { name = "python-dotenv", specifier = ">=0.9.9" },
@@ -187,6 +191,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/61/62/06741b579156360248d1ec624842ad0edf697050bbaf7c3e46394e106ad1/aiosignal-1.4.0.tar.gz", hash = "sha256:f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7", size = 25007, upload-time = "2025-07-03T22:54:43.528Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl", hash = "sha256:053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e", size = 7490, upload-time = "2025-07-03T22:54:42.156Z" },
+]
+
+[[package]]
+name = "alembic"
+version = "1.19.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mako" },
+    { name = "sqlalchemy" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/2b/e4153978368de59918115c9e01d3ebf58a558a7285efa7e960c383c4b59a/alembic-1.19.1.tar.gz", hash = "sha256:e0fca0518118c78acc493e31bcb5402f190057aaf6df8b5b95ce94c4789cf648", size = 2070816, upload-time = "2026-08-08T16:32:01.565Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/89/e62cc37b69ad357cc8ecd6e7367f5245f523d3cbb338a66197212bdf6749/alembic-1.19.1-py3-none-any.whl", hash = "sha256:b39018cb3d9413a19cbd54cf3c02ad33998641f0538eb77413a488a21c3e14be", size = 265946, upload-time = "2026-08-08T16:32:03.153Z" },
 ]
 
 [[package]]
