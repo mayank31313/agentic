@@ -2,7 +2,7 @@
 
 These instructions are used by GitHub Copilot (Chat, code review, and coding
 agent) when working in this repository. Follow them in addition to
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) and [`architecture.md`](../architecture.md).
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) and [`architecture.md`](../docs/architecture.md).
 
 ## Project context
 

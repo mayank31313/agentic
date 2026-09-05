@@ -1,4 +1,6 @@
 import base64
+import logging
+import os
 import os.path
 from pathlib import Path
 
@@ -9,7 +11,14 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+logger = logging.getLogger(__name__)
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+
+# Directory attachments are saved to when a bare filename (not an absolute
+# path) is supplied. Mirrors the `downloads/` convention used elsewhere in
+# the repo (see agentic_mcp/pdf_parser/tools.py).
+DEFAULT_ATTACHMENT_DIR = os.environ.get("GMAIL_ATTACHMENT_DIR", "downloads")
 
 
 def get_message_body(payload):
@@ -44,6 +53,35 @@ def get_message_body(payload):
         "utf-8", errors="replace"
     )
     return decoded, mime_type
+
+
+def get_attachments_metadata(payload):
+    """Recursively walk a Gmail message payload and collect attachment metadata.
+
+    Returns a list of dicts with ``filename``, ``attachment_id``,
+    ``mime_type``, and ``size`` for every part that represents an
+    attachment (i.e. has a filename and an ``attachmentId``).
+    """
+    attachments = []
+
+    def walk(part):
+        filename = part.get("filename")
+        body = part.get("body", {})
+        attachment_id = body.get("attachmentId")
+        if filename and attachment_id:
+            attachments.append(
+                {
+                    "filename": filename,
+                    "attachment_id": attachment_id,
+                    "mime_type": part.get("mimeType"),
+                    "size": body.get("size"),
+                }
+            )
+        for sub in part.get("parts", []):
+            walk(sub)
+
+    walk(payload)
+    return attachments
 
 
 class GMailTool:
@@ -103,11 +141,13 @@ class GMailTool:
             )
             raw_body, mime_type = get_message_body(msg["payload"])
             snippet = msg.get("snippet", "")
+            attachments = get_attachments_metadata(msg["payload"])
             return dict(
                 from_=from_,
                 subject=subject,
                 snippet=snippet,
                 body=raw_body,
+                attachments=attachments,
             )
 
         except HttpError as error:
@@ -123,6 +163,54 @@ class GMailTool:
         except HttpError as error:
             print(f"An error occurred: {error}")
             return []
+
+    def list_attachments(self, msg_id):
+        """List attachment metadata (filename, id, mime type, size) for a message."""
+        try:
+            service = build("gmail", "v1", credentials=self._creds)
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=msg_id, format="full")
+                .execute()
+            )
+            return get_attachments_metadata(msg["payload"])
+        except HttpError as error:
+            logger.error(f"An error occurred listing attachments for '{msg_id}': {error}")
+            return []
+
+    def download_attachment(self, msg_id, attachment_id, filename, download_dir=None):
+        """Fetch an attachment's data and save it to disk.
+
+        Returns the resolved file path the attachment was written to.
+        """
+        service = build("gmail", "v1", credentials=self._creds)
+        attachment = (
+            service.users()
+            .messages()
+            .attachments()
+            .get(userId="me", messageId=msg_id, id=attachment_id)
+            .execute()
+        )
+        data = attachment.get("data")
+        if not data:
+            raise ValueError(f"No data returned for attachment '{attachment_id}'")
+
+        file_bytes = base64.urlsafe_b64decode(data.encode("ASCII"))
+
+        target_dir = Path(download_dir or DEFAULT_ATTACHMENT_DIR)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        if (
+            not filename
+            or filename in {".", ".."}
+            or Path(filename).is_absolute()
+            or "/" in filename
+            or "\\" in filename
+        ):
+            raise ValueError(f"Invalid attachment filename '{filename}'")
+        file_path = target_dir / filename
+        file_path.write_bytes(file_bytes)
+        return str(file_path)
 
 
 def get_gmail_tools(google_credentials_path: str):
@@ -140,4 +228,43 @@ def get_gmail_tools(google_credentials_path: str):
         message_details = gmail_tool.read_message(message_id)
         return ToolResult(content=message_details)
 
-    return [search_gmail_messages, get_message_from_message_id]
+    @tool
+    def list_gmail_attachments(message_id: str):
+        """List attachments (filename, attachment_id, mime_type, size) on a Gmail message.
+
+        Use ``get_message_from_message_id`` first to find a message ID (or
+        pass one from ``search_gmail_messages``), then call this to see what
+        attachments are available before downloading one.
+        """
+        attachments = gmail_tool.list_attachments(message_id)
+        return ToolResult(content=attachments)
+
+    @tool
+    def download_gmail_attachment(message_id: str, attachment_id: str, filename: str):
+        """Download a Gmail attachment to the downloads directory and return its saved path.
+
+        Args:
+            message_id: The Gmail message ID the attachment belongs to.
+            attachment_id: The attachment ID, as returned by
+                ``list_gmail_attachments`` or ``get_message_from_message_id``.
+            filename: Name to save the attachment as (relative to the
+                downloads directory unless absolute).
+        """
+        try:
+            file_path = gmail_tool.download_attachment(message_id, attachment_id, filename)
+            return ToolResult(content={"file_path": file_path})
+        except Exception as error:
+            logger.error(
+                f"Error downloading attachment '{attachment_id}' from message "
+                f"'{message_id}': {error}"
+            )
+            return ToolResult(content={"error": str(error)})
+
+    return [
+        search_gmail_messages,
+        get_message_from_message_id,
+        list_gmail_attachments,
+        download_gmail_attachment,
+    ]
+
+# (Manual test harness removed; use unit tests instead.)

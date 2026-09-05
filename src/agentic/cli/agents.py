@@ -274,6 +274,16 @@ def update(agent_name, config_source, instructions_source, file):
     validation (and a re-load) succeeds. At least one of --config /
     --instructions must be given.
 
+    Both `--config` and `--instructions` REPLACE, not partially patch,
+    their respective content (`--config` shallow-merges top-level keys
+    only, so list fields like `tools` are replaced wholesale; `--instructions`
+    replaces the entire body). To make a targeted edit (e.g. add one
+    sentence to the system prompt, or add one entry to a list field)
+    without losing the rest, run `agentic agents show <agent_name>` first
+    to see the exact current content, construct the full new value
+    yourself (existing content + the requested change), and pass that
+    complete value here.
+
     ARGUMENTS:
         AGENT_NAME  Name of the existing agent to update.
         FILE        Path to the agentic config file (default: agentic.json)
@@ -361,6 +371,63 @@ def update(agent_name, config_source, instructions_source, file):
     click.echo(f"  Model: {agent_config.model_id}")
     click.echo(f"  Tools: {len(agent_config.tools or ())} configured")
     click.echo(f"  Skills: {len(agent_config.skills or [])} configured")
+
+
+@agents.command(name="show")
+@click.argument("agent_name")
+@click.argument("file", type=click.Path(exists=True), default=os.environ.get("AGENTIC_CONFIG", "resources/agentic.json"))
+def show(agent_name, file):
+    """Print an existing agent's raw JSON header and instructions body.
+
+    This is a **read-only** counterpart to `write`/`update` — it does not
+    validate against `AgentConfig` or re-load through the runtime path, it
+    just parses the two-part file format
+    (`AgentConfig.parse_raw_file`) and prints the header (pretty-printed
+    JSON) and the instructions body separated by a clearly-marked
+    delimiter, so a caller (human or agent) can see the *exact current
+    content* before making a targeted edit — without needing a generic
+    file-read tool. Use this before `agentic agents update --instructions`
+    when you only want to change part of the system prompt: copy the
+    printed body, apply just the requested change, and pass the full
+    result back to `update` (which always replaces the body wholesale,
+    never partially).
+
+    ARGUMENTS:
+        AGENT_NAME  Name of the existing agent to show.
+        FILE        Path to the agentic config file (default: agentic.json)
+
+    Example:
+        agentic agents show weather_reporter
+    """
+    from agentic.app.config import AgentConfig
+
+    try:
+        agentic_config = _load_agentic_config(file)
+    except FileNotFoundError:
+        click.echo(f"Configuration file '{file}' not found.", err=True)
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        click.echo(f"Error parsing configuration file: {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error loading configuration: {e}", err=True)
+        sys.exit(1)
+
+    agent_path = os.path.join(agentic_config.workspace, "agents", agent_name, "instructions.md")
+    if not os.path.isfile(agent_path):
+        click.echo(f"Agent instructions file not found: {agent_path}", err=True)
+        sys.exit(1)
+
+    try:
+        config_data, instructions_text = AgentConfig.parse_raw_file(agent_path)
+    except Exception as e:
+        click.echo(f"Failed to parse '{agent_path}': {e}", err=True)
+        sys.exit(1)
+
+    click.echo(f"--- CONFIG ({agent_path}) ---")
+    click.echo(json.dumps(config_data, indent=2))
+    click.echo("--- INSTRUCTIONS ---")
+    click.echo(instructions_text)
 
 
 @agents.command(name="validate")

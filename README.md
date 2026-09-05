@@ -49,7 +49,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
    [FastAPI/WebSocket Gateway]
 ```
 
-See [`architecture.md`](architecture.md) for the conceptual component/data-flow breakdown.
+See [`architecture.md`](docs/architecture.md) for the conceptual component/data-flow breakdown.
 
 ### Project layout
 
@@ -86,7 +86,7 @@ docker-compose.yaml     # `bot` (assistant) + `mcp` (tool server) services
 - **Storage:** TinyDB, SQLAlchemy, optional Elasticsearch
 - **Secrets:** environment-variable-backed provider via `cndi.secrets` (`env://VAR_NAME` references in `application.yml`)
 - **ML/audio:** `transformers`, `torch`, `soundfile`, `sentencepiece`
-- **Infra integrations:** Google API client (Gmail), Proxmoxer (Proxmox VE)
+- **Infra integrations:** Google API client (Gmail, Calendar), Proxmoxer (Proxmox VE)
 - **Packaging/build:** `uv` (PEP 621 `pyproject.toml`, `uv_build` backend)
 
 ## Getting started
@@ -150,10 +150,11 @@ This starts:
 ## Extending Agentic
 
 - **Add a tool/integration:** create a new MCP server under `src/agentic/agentic_mcp/<your_tool>/` and register it in `resources/agentic.json` under `mcpServers`.
-- **Add an agent:** create `workspace/agents/<name>/instructions.md` and register it in `resources/agentic.json`'s `agents` array — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for the full walkthrough.
+- **Add an agent:** create `workspace/agents/<name>/instructions.md` — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for the full walkthrough.
 - **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for a step-by-step guide.
 - **Add a channel:** implement a new adapter under `src/agentic/app/channels/` alongside the existing Telegram adapter.
 - **Add a scheduled job:** append an entry to `cron_schedules.json` with a cron expression, delivery target, and sub-agent definition.
+- **Change the persistent data schema:** edit `src/agentic/app/db/models.py` and add a matching Alembic migration under `alembic/versions/` (`uv run alembic revision -m "..."`, then hand-fill `upgrade`/`downgrade`); migrations run automatically (`alembic upgrade head`) whenever the MCP server starts.
 
 ## Contributing
 

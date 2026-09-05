@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -8,14 +9,11 @@ from apscheduler.triggers.cron import CronTrigger
 from cndi.annotations import Bean
 from cndi.annotations.events import OnEvent
 from cndi.env import getContextEnvironment
-from deepagents import create_deep_agent
-from deepagents.backends import FilesystemBackend
-from langchain.chat_models import init_chat_model
 from tinydb import TinyDB
 
 from agentic import AgenticConfig
+from agentic.app.agents import AgentRegistry
 from agentic.app.common.tools import ToolsRegistry
-from agentic.app.config import AgentConfig
 from agentic.app.constants import CRON_UPDATE_EVENT
 from agentic.app.scheduler.tools import CronSchedule
 
@@ -27,9 +25,7 @@ def job_listener(event):
 
 
 @Bean()
-def getBankgroundScheduler(
-    agenticConfig: AgenticConfig, tool_registry: ToolsRegistry
-) -> BackgroundScheduler:
+def getBankgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
     time_zone = getContextEnvironment("cron.scheduler.timezone", "Europe/London")
 
     executors = {
@@ -56,33 +52,12 @@ def getBankgroundScheduler(
             logger.error(f"Failed to update schedule: {e}")
 
     def execute_task(cron: CronSchedule):
-        agent_config: AgentConfig = agenticConfig.get_agent("main")
-        model_config = agenticConfig.get_model(agent_config.model_id)
-        model = init_chat_model(
-            model=model_config.model,
-            base_url=model_config.base_url,
-            api_key=model_config.api_key
-            if type(model_config.api_key) is str
-            else model_config.api_key.resolve(),
-        )
-        tools = list(
-            filter(
-                lambda x: x.name not in agent_config.denied_tools,
-                tool_registry.tools.values(),
-            )
-        )
-        agent = create_deep_agent(
-            system_prompt=cron.subagent.system_prompt,
-            name=cron.subagent.agent_name,
-            backend=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
-            model=model,
-            tools=tools,
-        )
-
-        result = agent.invoke(dict(messages=cron.task)).get("messages")
-        for message in result:
-            print(message)
-
+        try:
+            agent = agent_registry.get_agent(cron.subagent.agent_name)
+        except KeyError as e:
+            logger.error(str(e))
+            return
+        result = asyncio.run(agent.ainvoke(dict(messages=cron.task))).get("messages")
         logger.info(result)
 
     with TinyDB(os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")) as db:
