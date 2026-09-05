@@ -55,7 +55,6 @@ def getAgenticConfig() -> AgenticConfig:
         # "main" agent.
         agentic = AgenticConfig(
             workspace="./workspace",
-            skills=[SkillsConfig(name="superpowers", path="skills/superpowers")],
             mcpServers={
                 "alice_mcps": {
                     "url": "http://host.docker.internal:8811/sse",
@@ -84,7 +83,7 @@ def main(
     """Start the bot."""
 
     # Run the bot until the user presses Ctrl-C
-    fast_app = get_adapter_gateway(gateway, connection_manager)
+    fast_app = get_adapter_gateway(gateway, connection_manager, agentic_bot=agentic_bot)
     fast_server = threading.Thread(
         target=lambda: uvicorn.run(fast_app, host="0.0.0.0", port=5000)
     )

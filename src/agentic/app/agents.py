@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from cndi.annotations import Component
+from cndi.annotations import Component, Bean
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend
 from deepagents.backends.filesystem import FilesystemBackend
@@ -68,8 +68,6 @@ def get_image_agent():
 
 logger = logging.getLogger(__name__)
 
-
-@Component
 class AgentRegistry:
     def __init__(self):
         self.agents = dict()
@@ -79,7 +77,9 @@ class AgentRegistry:
         logger.debug(f"Agent Registered {name}")
 
     def get_agent(self, name):
-        return self.agents.get(name)
+        if name in self.agents:
+            return self.agents.get(name)
+        raise KeyError(f"Agent {name} not found. Available agents: {list(self.agents.keys())}")
 
 
 def get_speech_to_text_pipeline(device: str = "cpu"):
@@ -161,6 +161,7 @@ def get_main_agent(
         backend=CompositeBackend(
             default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
             routes={
+                "/workspace": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
                 "/skills/": FilesystemBackend(root_dir="src/skills", virtual_mode=True),
                 "/resources/": FilesystemBackend(
                     root_dir="resources", virtual_mode=True
@@ -175,3 +176,7 @@ def get_main_agent(
         interrupt_on=interrupt_tool_on,
     )
     return agent
+
+@Bean()
+def get_agent_registry() -> AgentRegistry:
+    return AgentRegistry()

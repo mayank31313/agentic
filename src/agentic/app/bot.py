@@ -9,9 +9,11 @@ from langgraph.types import Command, Interrupt
 from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry, get_main_agent
 from agentic.app.common import InterruptEvent
+from agentic.app.common.custom_tools import CustomToolLoader
+from agentic.app.common.memory import Memory
 from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.common.tools import ToolsRegistry
-from agentic.app.config import AgentConfig
+from agentic.app.config import AgentConfig, AgentToolConfig
 from agentic.app.observability import get_langfuse_handler
 
 logger = logging.getLogger(__name__)
@@ -44,12 +46,26 @@ class AgenticBot:
                     agenticConfig.models,
                 )
             )
+        self.memory = Memory(workspace=self.agenticConfig.workspace)
+
 
     def initialise_agent(self):
         runnable_tools, approvable_tools = [], []
         for tool_config in self.agentConfig.tools:
             if tool_config.require_approval:
                 approvable_tools.append(tool_config)
+
+        custom_tool_loader = CustomToolLoader(self.agenticConfig.workspace)
+        for spec in custom_tool_loader.list_specs():
+            if not spec.approved and not any(t.name == spec.name for t in approvable_tools):
+                approvable_tools.append(
+                    AgentToolConfig(
+                        name=spec.name,
+                        require_approval=True,
+                        approval_text=spec.approval_text
+                        or f"Unapproved custom tool '{spec.name}': {spec.description}",
+                    )
+                )
 
         tools = list(
             filter(
@@ -70,8 +86,26 @@ class AgenticBot:
 
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
+    def reload_tools(self) -> dict:
+        """Refresh the tool registry (MCP tools, workspace sub-agents,
+        agent-authored custom tools) and rebuild the compiled agent graph so
+        the change takes effect without a full process restart.
+
+        NOTE: rebuilding the agent creates a fresh in-memory checkpointer,
+        so any in-flight conversation state for this agent is lost. Prefer
+        calling this between conversations rather than mid-task.
+        """
+        tool_notifier_middleware = next(
+            (m for m in self.middelwares if isinstance(m, ToolNotifierMiddleware)), None
+        )
+        summary = self.tool_registry.refresh(self.agenticConfig, tool_notifier_middleware)
+        self.initialise_agent()
+        logger.info(f"Tools reloaded: {summary}")
+        return summary
+
     async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict={}):
         channel_name = channel_metadata.get("channel_name", "websocket")
+        self.memory.add(dict(text=message, type="user"))
 
         config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}, "callbacks": [self.langfuse_handler]}
         if message.startswith("$decision"):
@@ -135,4 +169,6 @@ Args: {action_requests[0]["args"]}""",
                     if type(content) == dict:
                         response_text.append(content)
 
+        self.memory.add(dict(text="\n".join([c["text"] for c in response_text]), type="agent"))
+        self.memory.write()
         return response_text

@@ -18,6 +18,31 @@
       "name": "swamp_sub_agent",
       "require_approval": false,
       "approval_text": null
+    },
+    {
+      "name": "create_custom_tool",
+      "require_approval": true,
+      "approval_text": "This agent wants to author and register a brand-new tool (Python script or Docker container). Review the generated source/Dockerfile before allowing."
+    },
+    {
+      "name": "update_custom_tool",
+      "require_approval": true,
+      "approval_text": "This agent wants to edit an existing custom tool (Python script or Docker container). Review the change before allowing."
+    },
+    {
+      "name": "create_calendar_event",
+      "require_approval": true,
+      "approval_text": "This agent wants to create/schedule a new calendar event or meeting. Review the details before allowing."
+    },
+    {
+      "name": "update_calendar_event",
+      "require_approval": true,
+      "approval_text": "This agent wants to modify an existing calendar event or meeting. Review the change before allowing."
+    },
+    {
+      "name": "delete_calendar_event",
+      "require_approval": true,
+      "approval_text": "This agent wants to delete/cancel a calendar event or meeting. Review before allowing."
     }
   ],
   "denied_tools": [

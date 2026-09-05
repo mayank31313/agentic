@@ -6,8 +6,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.13 /uv /uvx /bin/
 WORKDIR /bot
 COPY pyproject.toml uv.lock README.md LICENSE CONTRIBUTING.md /bot/
 RUN uv sync --no-install-project
-COPY src /bot/src
+COPY . /bot/
 ENV PATH="/root/.local/bin:$PATH"
-RUN uv sync
+RUN uv sync && uv run alembic upgrade head
 
 CMD ["uv", "run","agentic", "run"]

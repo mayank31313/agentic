@@ -1,0 +1,37 @@
+---
+name: REPLACE-WITH-DIRECTORY-NAME
+description: >-
+  REPLACE: one to a few sentences stating (1) exactly what this skill does,
+  and (2) exactly when the agent should use it, with concrete keywords a
+  user would actually say. Max 1,024 characters. This is the only text the
+  agent sees before deciding to activate the skill.
+# Optional fields — delete any you don't need:
+# license: MIT
+# compatibility: Describe environment requirements, e.g. "Requires internet access" or "Requires a sandbox backend to run scripts/"
+# metadata:
+#   author: your-name
+#   version: "1.0"
+# allowed-tools: tool_one tool_two
+---
+
+# REPLACE-WITH-SKILL-NAME
+
+## Overview
+
+REPLACE: one or two sentences on the purpose of this skill.
+
+## Instructions
+
+1. REPLACE: first step.
+2. REPLACE: second step.
+3. REPLACE: how to handle the common edge case.
+
+## Supporting Resources
+
+<!-- Delete this section if the skill has no scripts/, references/, or assets/ -->
+
+- `scripts/REPLACE.py` — REPLACE: what it does and when to run it. Requires
+  a sandbox backend to execute.
+- `references/REPLACE.md` — REPLACE: what detail it holds and when to
+  read it instead of putting the detail here in SKILL.md.
+- `assets/REPLACE` — REPLACE: what it is and when to use/copy it.
