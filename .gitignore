@@ -13,3 +13,4 @@ credentials/**
 cron_schedules.json
 .env
 workspace/data/
+downloads/
