@@ -1,14 +1,38 @@
-"""Unit tests for agentic.agentic_mcp.gmail.tools helpers.
+"""Unit tests for gmail tool helpers.
 
 These target the pure payload-parsing helpers (``get_message_body`` and
 ``get_attachments_metadata``) in isolation, since ``GMailTool`` itself
 requires Google OAuth credentials and network access to construct.
 """
 
-from agentic.agentic_mcp.gmail.tools import (
-    get_attachments_metadata,
-    get_message_body,
-)
+import base64
+import importlib.util
+from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
+
+def _load_gmail_tools_module():
+    module_path = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "agentic"
+        / "agentic_mcp"
+        / "gmail"
+        / "tools.py"
+    )
+    spec = importlib.util.spec_from_file_location("gmail_tools_under_test", module_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+gmail_tools = _load_gmail_tools_module()
+GMailTool = gmail_tools.GMailTool
+get_attachments_metadata = gmail_tools.get_attachments_metadata
+get_message_body = gmail_tools.get_message_body
 
 
 def test_get_attachments_metadata_returns_empty_list_when_no_attachments():
@@ -92,3 +116,22 @@ def test_get_message_body_prefers_plain_text():
     assert text == "hello"
     assert mime_type == "text/plain"
 
+
+def test_download_attachment_rejects_path_traversal(monkeypatch, tmp_path):
+    attachment_resource = MagicMock()
+    attachment_resource.get.return_value.execute.return_value = {
+        "data": base64.urlsafe_b64encode(b"hello").decode("ascii")
+    }
+    messages_resource = MagicMock()
+    messages_resource.attachments.return_value = attachment_resource
+    users_resource = MagicMock()
+    users_resource.messages.return_value = messages_resource
+    service = MagicMock()
+    service.users.return_value = users_resource
+    monkeypatch.setattr(gmail_tools, "build", lambda *args, **kwargs: service)
+
+    gmail_tool = object.__new__(GMailTool)
+    gmail_tool._creds = object()
+
+    with pytest.raises(ValueError, match="Invalid attachment filename"):
+        gmail_tool.download_attachment("message", "attachment", "../escape.txt", tmp_path)

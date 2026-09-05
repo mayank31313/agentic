@@ -200,6 +200,14 @@ class GMailTool:
 
         target_dir = Path(download_dir or DEFAULT_ATTACHMENT_DIR)
         target_dir.mkdir(parents=True, exist_ok=True)
+        if (
+            not filename
+            or filename in {".", ".."}
+            or Path(filename).is_absolute()
+            or "/" in filename
+            or "\\" in filename
+        ):
+            raise ValueError(f"Invalid attachment filename '{filename}'")
         file_path = target_dir / filename
         file_path.write_bytes(file_bytes)
         return str(file_path)

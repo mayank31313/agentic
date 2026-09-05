@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -72,7 +73,7 @@ def get_adapter_gateway(
                 status_code=503,
             )
         try:
-            summary = agentic_bot.reload_tools()
+            summary = await asyncio.to_thread(agentic_bot.reload_tools)
         except Exception as e:
             logger.exception("Failed to reload tools")
             return JSONResponse({"error": str(e)}, status_code=500)

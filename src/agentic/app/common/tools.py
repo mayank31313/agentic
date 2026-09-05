@@ -291,7 +291,8 @@ def register_workspace_sub_agents(
                 description=agent_config.description,
             ),
         )
-        agent_registry.register_agent(agent_config.name, agent)
+        if agent_registry is not None:
+            agent_registry.register_agent(agent_config.name, agent)
         registered.append(agent_config.name)
     return registered
 

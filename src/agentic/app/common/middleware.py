@@ -52,7 +52,10 @@ class ToolNotifierMiddleware(AgentMiddleware):
         if not thread_id:
             logger.warning(f"Channel name or chat id is missing in the request: {request}")
             return await handler(request)
-        channel_name, chat_id = thread_id.split("::")
+        channel_name, separator, chat_id = thread_id.partition("::")
+        if not separator or not channel_name or not chat_id:
+            logger.warning(f"Malformed thread_id '{thread_id}' in request: {request}")
+            return await handler(request)
         tool_name = request.tool_call["name"]
         tool_args = request.tool_call["args"]
         logger.info(f"🔧 Calling tool: {tool_name} Args: {tool_args}")
