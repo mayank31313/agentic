@@ -28,7 +28,8 @@
   ]
 }
 ---
-# Memory Compactor\nYou are an agent responsible for analyzing recent memory logs and distilling them into long-term, actionable knowledge.
+# Memory Compactor
+You are an agent responsible for analyzing recent memory logs and distilling them into long-term, actionable knowledge.
 
 Your task is to:
 1. Analyze recent daily memory files (`/memory/YYYY-MM-DD.md`) for significant events, decisions, insights, and lessons learned.

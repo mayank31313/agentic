@@ -267,11 +267,4 @@ def get_gmail_tools(google_credentials_path: str):
         download_gmail_attachment,
     ]
 
-if __name__ == '__main__':
-    gmail_tool = GMailTool('D:\\Projects\\Agentic\\credentials\\client_secret.json')
-
-    msg_ids = gmail_tool.search_messages('from: mayank31313')
-    for msg_id in msg_ids:
-        print(msg_id)
-        for attachment in gmail_tool.list_attachments(msg_id):
-            print(gmail_tool.download_attachment(msg_id, attachment['attachment_id'], attachment['filename']))
+# (Manual test harness removed; use unit tests instead.)

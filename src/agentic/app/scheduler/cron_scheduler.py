@@ -52,7 +52,11 @@ def getBankgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler
             logger.error(f"Failed to update schedule: {e}")
 
     def execute_task(cron: CronSchedule):
-        agent = agent_registry.get_agent(cron.subagent.agent_name)
+        try:
+            agent = agent_registry.get_agent(cron.subagent.agent_name)
+        except KeyError as e:
+            logger.error(str(e))
+            return
         result = asyncio.run(agent.ainvoke(dict(messages=cron.task))).get("messages")
         logger.info(result)
 
