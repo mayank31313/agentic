@@ -1,3 +1,9 @@
+# Identity and personality files
+
+The canonical templates now live in `IDENTITY.md` and `SOUL.md` at the workspace root.
+
+---
+
 # AGENTS.md - Your Workspace
 
 This folder is home. Treat it that way.
