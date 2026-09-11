@@ -49,6 +49,7 @@ dependencies = [
 
 [package.dev-dependencies]
 test = [
+    { name = "mcp-agent-test" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-bdd" },
@@ -95,6 +96,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 test = [
+    { name = "mcp-agent-test", specifier = ">=0.1.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-bdd", specifier = ">=8.1.0" },
@@ -1634,6 +1636,24 @@ wheels = [
 cli = [
     { name = "python-dotenv" },
     { name = "typer" },
+]
+
+[[package]]
+name = "mcp-agent-test"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "click" },
+    { name = "mcp" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "watchfiles" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/dd/246ce6fcefb6a92335c55e24b72c4a5d633e2b5e2dc0a2b22225f38c974d/mcp_agent_test-0.1.0.tar.gz", hash = "sha256:f21bb5a7484dd7543b2257717e1121436f9651f894ccf72d32c046cb697c09b8", size = 309129, upload-time = "2026-04-16T02:13:16.778Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/85/669eade25831344f450582ca5eeb487a8c90a7660c0737b8b7ad4490c9b3/mcp_agent_test-0.1.0-py3-none-any.whl", hash = "sha256:1030c23668842d0b464bf1020bd8e1df12b5bd6a8a2665e9cc7d4d54787231a6", size = 224793, upload-time = "2026-04-16T02:13:15.056Z" },
 ]
 
 [[package]]

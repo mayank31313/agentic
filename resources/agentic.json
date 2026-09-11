@@ -29,7 +29,7 @@
     }],
     "mcpServers": {
         "agentic_mcp": {
-            "url": "http://localhost:8811/mcp",
+            "url": "http://host.docker.internal:8811/mcp",
             "transport": "http"
         },
         "github": {

@@ -8,4 +8,4 @@ rcn:
 secrets.provider.env.enable: true
 app:
   agentic:
-    config_path: resources/agentic.json
+    config_path: resources/agentic_test.json

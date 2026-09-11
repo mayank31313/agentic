@@ -1,20 +1,21 @@
 {
     "workspace": "./workspace",
-    "models": [
-        {
-            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-            "model_id": "custom-nemotron-3-super-120b-a12b",
-            "context_window": 128000,
-            "base_url": "https://integrate.api.nvidia.com/v1",
-            "api_key": {
-                "env_key": "NVIDIA_API_KEY"
-            }
-        }
-    ],
     "mcpServers": {
         "agentic_mcp": {
             "url": "http://mcp:8811/mcp",
             "transport": "http"
         }
-    }
+    },
+    "models": [
+        {
+            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
+            "model_id": "custom-nemotron-3-super-120b-a12b",
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "api_key": {
+                "env_key": "NVIDIA_API_KEY"
+            },
+            "context_window": 128000
+        }
+    ],
+    "tools": []
 }

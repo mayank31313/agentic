@@ -5,6 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastmcp.tools import ToolResult, tool
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -167,7 +168,13 @@ class GCalendarTool:
 
 
 def get_calendar_tools(google_credentials_path: str):
-    calendar_tool = GCalendarTool(google_credentials_path)
+    try:
+        calendar_tool = GCalendarTool(google_credentials_path)
+    except RefreshError:
+        logger.error(
+            "Failed to refresh Google Calendar credentials. Please check your credentials."
+        )
+        return []
 
     @tool
     def list_calendar_events(

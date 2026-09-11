@@ -127,7 +127,7 @@ class AgenticConfig(BaseModel):
     workspace: str
     mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
-    tools: tuple[ToolConfig] = Field(default_factory=tuple, description="List of tools")
+    tools: list[ToolConfig] = Field(default_factory=list, description="List of tools")
 
     def get_tool(self, tool_name: str):
         return next(filter(lambda x: x.enabled and x.name == tool_name, self.tools))
