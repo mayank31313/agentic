@@ -1,10 +1,11 @@
+import os
 from enum import Enum
 
 from langgraph.types import Interrupt
 from pydantic import BaseModel, Field
 
 INTERRUPT_EVENT = "interrupt_event"
-
+AGENTIC_HOME = os.getenv("AGENTIC_HOME", "~/.agentic")
 
 class InterruptEvent(BaseModel):
     interrupt: Interrupt

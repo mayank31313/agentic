@@ -1,7 +1,9 @@
 # tests/behaviour/steps/test_bot_webhook.py
+import asyncio
 import json
 
 import httpx
+from langchain_core.messages import HumanMessage
 from pytest_bdd import given, scenarios, then, when, parsers
 import logging
 
@@ -19,7 +21,8 @@ def stack_is_running(compose_stack, bot_base_url):
 
 
 @when("I query the bot's health endpoint", target_fixture="response")
-def query_health(stack_ctx):
+def query_health(stack_ctx, mcp_mock_server):
+    logger.info(asyncio.run(mcp_mock_server.get_server_info()))
     return httpx.get(f"{stack_ctx['base_url']}/health", timeout=5)
 
 @then(parsers.parse("the response status is {status:d}"))
@@ -28,22 +31,48 @@ def assert_status(response, status):
 
 def send_message(text: str, websocket):
     websocket.send(text)
+    messages = []
     while True:
         response = websocket.recv()
         outbound_message = OutboundMessage.model_validate(json.loads(response))
         logger.info(f"Outbound Message: {outbound_message}")
+        messages.append(outbound_message)
         if "Calling tool:" in outbound_message.text:
             continue
 
-        return outbound_message
+        return outbound_message, messages
 
+@then("Bootstrap agent")
+def bootstrap_agent(websocket, user_agent, judge):
+    message, messages = send_message(text="Hey", websocket=websocket)
+    count = 0
+    while count < 10:
+        logger.info(f"Message from bot: {message}")
+        user_response = user_agent.invoke(dict(query=message.metadata['response'][0]['text']))
+        logger.info(f"User response: {user_response}")
+        message, messages = send_message(text=user_response.content, websocket=websocket)
+        judge_response = judge.invoke(
+            dict(user_query="", response=message.metadata['response'][0]['text'], criterias="Agent has clearly confirmed that bootstrap process is completed and bootstrap file is now deleted"))
 
+        logger.info(f"Judge verdict: {judge_response}")
+        if judge_response.passed and judge_response.score >= 4:
+            count = 12
+            break
+        else:
+            logger.info(f"Judge failed: {judge_response.reasoning}")
+
+        count += 1
+
+    assert judge_response.passed and judge_response.score >= 4, f"Judge failed: {judge_response.reasoning}"
+    if count == 12:
+        logger.info("Agent Bootstrap is complete and there are no questions from bot")
 
 @then("connect to bot using websocket and say hey")
 def connect_to_bot(websocket, judge):
     text =  "Hey"
-    message = send_message(text = text, websocket=websocket)
-
+    message, messages = send_message(text = text, websocket=websocket)
+    for m in messages:
+        logger.info(f"Message: {m}")
     assert message.channel == WebSocketsAdapter.name, f"Expected channel {WebSocketsAdapter.name}, got {message.channel}"
     assert message.chat_id == "test_user", f"Expected chat_id 'test_user', got {message.chat_id}"
 
@@ -56,5 +85,7 @@ def connect_to_bot(websocket, judge):
 
 @then(parsers.parse("Send message to bot \"{message}\" and expect \"{criteria}\""))
 def send_message_expect(message, criteria, websocket):
-    message = send_message(text = message, websocket=websocket)
+    message, messages = send_message(text = message, websocket=websocket)
     logger.info(f"Response: {message}")
+    for m in messages:
+        logger.info(f"Message: {m}")

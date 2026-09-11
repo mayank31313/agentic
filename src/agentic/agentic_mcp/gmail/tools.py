@@ -5,6 +5,7 @@ import os.path
 from pathlib import Path
 
 from fastmcp.tools import ToolResult, tool
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -214,7 +215,13 @@ class GMailTool:
 
 
 def get_gmail_tools(google_credentials_path: str):
-    gmail_tool = GMailTool(google_credentials_path)
+    try:
+        gmail_tool = GMailTool(google_credentials_path)
+    except RefreshError:
+        logger.error(
+            "Failed to refresh Google Gmail credentials. Please check your credentials."
+        )
+        return []
 
     @tool
     def search_gmail_messages(gmail_query: str):
