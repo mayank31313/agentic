@@ -15,3 +15,7 @@ cron_schedules.json
 workspace/data/
 downloads/
 /tests/workspace/
+
+# MkDocs build output
+/site/
+

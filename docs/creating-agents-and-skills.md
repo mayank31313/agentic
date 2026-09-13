@@ -3,8 +3,8 @@
 This guide walks through the current, code-verified steps for adding a new
 **agent** and a new **skill** to Agentic. It complements
 [`architecture.md`](architecture.md) and the "Extending Agentic" section
-of [`README.md`](../README.md); read those first for the high-level
-component overview.
+of the [Home](index.md#extending-agentic) page; read those first for the
+high-level component overview.
 
 > Everything here reflects the current implementation
 > (`src/agentic/app/config.py`, `src/agentic/app/agents.py`,
@@ -35,9 +35,9 @@ component overview.
 `workspace/agents/<name>/instructions.md` is the **only** place agent
 configuration lives — there's no separate registration step. It's loaded
 at runtime by `AgenticConfig.get_agent(name)` (see
-[`config.py`](../src/agentic/app/config.py)), and both `agentic agents
+[`config.py`](https://github.com/mayank31313/agentic/blob/main/src/agentic/app/config.py)), and both `agentic agents
 list` and `agentic agents run` (see
-[`src/agentic/cli/agents.py`](../src/agentic/cli/agents.py)) discover
+[`src/agentic/cli/agents.py`](https://github.com/mayank31313/agentic/blob/main/src/agentic/cli/agents.py)) discover
 agents the same way, via `AgenticConfig.list_agents()`, which scans
 `<workspace>/agents/*/instructions.md` on disk. `resources/agentic.json`
 holds shared `models`, `tools`, and `mcpServers` config, but has no
@@ -53,7 +53,7 @@ Each `instructions.md` file has two parts separated by a line containing
 only `---`:
 
 1. A JSON object matching the `AgentConfig` fields (see
-   [`config.py`](../src/agentic/app/config.py)) — the header **is**
+   [`config.py`](https://github.com/mayank31313/agentic/blob/main/src/agentic/app/config.py)) — the header **is**
    parsed straight into an `AgentConfig` instance
    (`AgentConfig(**json.loads(header), ...)`), so it must validate against
    that pydantic model exactly. Run `agentic agents schema` to print the
@@ -194,7 +194,7 @@ loaded automatically by the deep agent's `SkillsMiddleware` via the
 `skills` route configured in each agent's `instructions.md` (see above).
 
 This project already has a dedicated meta-skill for authoring skills in
-depth — **[`src/skills/deep-agents-skill-creator/SKILL.md`](../src/skills/deep-agents-skill-creator/SKILL.md)** —
+depth — **[`src/skills/deep-agents-skill-creator/SKILL.md`](https://github.com/mayank31313/agentic/blob/main/src/skills/deep-agents-skill-creator/SKILL.md)** —
 covering the full Agent Skills spec, frontmatter fields, interpreter vs.
 sandbox vs. plain-tool-call patterns, and validation/testing steps. Use it
 as the canonical deep-dive; this section is a condensed quick-start.
@@ -228,7 +228,7 @@ inputs/outputs, edge cases, and explicit pointers to any `scripts/`,
 
 ### 2. Worked example: reusing `agentic-cli`'s shape
 
-Look at [`src/skills/agentic-cli/SKILLS.md`](../src/skills/agentic-cli/SKILLS.md)
+Look at [`src/skills/agentic-cli/SKILLS.md`](https://github.com/mayank31313/agentic/blob/main/src/skills/agentic-cli/SKILLS.md)
 for a real, working example: frontmatter with a detailed trigger
 description, a command reference section, an error-recovery table, and
 explicit "if this skill fails to load" troubleshooting. New skills should
@@ -246,7 +246,7 @@ troubleshooting.
 1. Confirm the skill directory sits under a path already referenced by an
    agent's `skills` config (`./src/skills/` is wired to `/skills/` for the
    `main` agent by default — see
-   [`workspace/agents/main/instructions.md`](../workspace/agents/main/instructions.md)).
+   [`workspace/agents/main/instructions.md`](https://github.com/mayank31313/agentic/blob/main/workspace/agents/main/instructions.md)).
    No extra registration step is needed if you add the skill under
    `src/skills/`; it's picked up automatically the next time the agent
    initializes.
@@ -332,7 +332,7 @@ than working around them silently:
 
 - **`agentic agents run <name>` is a placeholder.** It validates config and
   prints what it *would* do but does not actually execute the agent (see
-  the `TODO` in [`cli/agents.py`](../src/agentic/cli/agents.py)).
+  the `TODO` in [`cli/agents.py`](https://github.com/mayank31313/agentic/blob/main/src/agentic/cli/agents.py)).
 - **`config set` does not persist to disk** — it only prints the merged
   config to stdout. You must capture and write the output back to the
   file yourself.
@@ -347,7 +347,7 @@ than working around them silently:
   reloads in production.
 
 If you fix any of these, update this document and
-[`README.md`](../README.md)/[`architecture.md`](architecture.md)
+the [Home](index.md)/[`architecture.md`](architecture.md) pages
 alongside the code change, per the project's config-first / docs-in-sync
 philosophy.
 

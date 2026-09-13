@@ -1,0 +1,74 @@
+site_name: Agentic
+site_description: A config-driven personal AI assistant platform (deepagents/LangChain, MCP tool servers, APScheduler, FastAPI/WebSocket gateway, Telegram channel).
+site_author: Mayank Shinde
+site_url: https://mayank31313.github.io/agentic/
+repo_name: mayank31313/agentic
+repo_url: https://github.com/mayank31313/agentic
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+# Internal planning/spec notes are not part of the published documentation.
+exclude_docs: |
+  superpowers/
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Creating agents and skills: creating-agents-and-skills.md
+  - CLI reference: cli.md
+  - Contributing: https://github.com/mayank31313/agentic/blob/main/CONTRIBUTING.md
+  - License: https://github.com/mayank31313/agentic/blob/main/LICENSE
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/mayank31313/agentic
+

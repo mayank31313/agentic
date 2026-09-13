@@ -1,8 +1,8 @@
 # Architecture
 
 This document describes the conceptual components of Agentic and how they interact. For
-setup and usage instructions see [`README.md`](../README.md); for contribution guidelines see
-[`CONTRIBUTING.md`](../CONTRIBUTING.md).
+setup and usage instructions see the [Home](index.md) page; for contribution guidelines see
+[`CONTRIBUTING.md`](https://github.com/mayank31313/agentic/blob/main/CONTRIBUTING.md) on GitHub.
 
 ## Component overview
 
@@ -76,7 +76,7 @@ Agentic favors configuration over code changes: agents, models, skills, tool per
 MCP servers are described in `resources/agentic.json`, while channel/runtime settings (secrets
 provider, tokens) live in `resources/application.yml`. Adding a new integration or scheduled job
 typically only requires registering it in these files rather than modifying the core runtime —
-see the "Extending Agentic" section of [`README.md`](../README.md) for details.
+see the "Extending Agentic" section of the [Home](index.md#extending-agentic) page for details.
 
 ## Secrets resolution
 
