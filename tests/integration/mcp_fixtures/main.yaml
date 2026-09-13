@@ -1,0 +1,27 @@
+# fixtures/github.yaml
+server:
+  name: mock-github
+
+tools:
+  - name: create_issue
+    description: Create a GitHub issue
+    input_schema:
+      type: object
+      properties:
+        repo: { type: string }
+        title: { type: string }
+      required: [repo, title]
+    responses:
+      - match: { repo: acme/api }
+        return:
+          issue_number: 42
+          url: https://github.com/acme/api/issues/42
+      - default: true
+        return:
+          issue_number: 1
+
+errors:
+  - name: rate_limited
+    tool: create_issue
+    error_code: -32000
+    message: GitHub API rate limit exceeded

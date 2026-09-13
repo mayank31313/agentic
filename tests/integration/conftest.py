@@ -37,7 +37,8 @@ class JudgeVerdict(BaseModel):
 requires_docker = pytest.mark.skipif(
     shutil.which("docker") is None, reason="docker not available"
 )
-def bootstrap_main_agent():
+
+def bootstrap_main_agent(denied_tools=None):
     """Bootstrap the agentic workspace with a default agent."""
     if os.path.exists(AGENTIC_WORKSPACE_PATH):
         shutil.rmtree(AGENTIC_WORKSPACE_PATH)
@@ -57,16 +58,7 @@ def bootstrap_main_agent():
               "description": "Main Agent for system",
               "model_id": "custom-nemotron-3-super-120b-a12b",
               "tools": [],
-              "denied_tools": [
-                "mcp-activate-profile",
-                "mcp-add",
-                "mcp-config-set",
-                "mcp-create-profile",
-                "mcp-exec",
-                "mcp-find",
-                "mcp-remove",
-                "execute_code"
-              ],
+              "denied_tools": denied_tools,
               "skills": [
                 {
                   "path": "./src/skills/",
@@ -78,7 +70,12 @@ def bootstrap_main_agent():
 
 @pytest.fixture(scope="session")
 def compose_stack():
-    bootstrap_main_agent()
+    bootstrap_main_agent(denied_tools=[
+                "mcp-*",
+                "agentic_mcp*",
+                "execute_code",
+                "run_shell_command"
+              ])
     with open(AGENTIC_CONFIG_JSON, "w") as config_file:
         agentic_config = AgenticConfig(
             workspace="./workspace",

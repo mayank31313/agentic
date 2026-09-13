@@ -17,7 +17,7 @@ def sqlite_db(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENTIC_SQLITE_PATH", str(db_path))
     db_engine.reset_engine()
 
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     env = {**os.environ, "AGENTIC_SQLITE_PATH": str(db_path)}
     subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],

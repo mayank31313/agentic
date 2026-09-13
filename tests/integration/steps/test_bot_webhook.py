@@ -3,7 +3,6 @@ import asyncio
 import json
 
 import httpx
-from langchain_core.messages import HumanMessage
 from pytest_bdd import given, scenarios, then, when, parsers
 import logging
 

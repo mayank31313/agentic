@@ -85,7 +85,7 @@ def _load_common_tools_module():
     config_module.AgentConfig = type("AgentConfig", (), {})
 
     module_path = (
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[2]
         / "src"
         / "agentic"
         / "app"
