@@ -11,92 +11,88 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
-import types
 
 import pytest
 
 
-def _ensure_module(name: str, *, package: bool = False):
-    module = sys.modules.get(name)
-    if module is None:
-        module = types.ModuleType(name)
-        if package:
-            module.__path__ = []
-        sys.modules[name] = module
-    return module
+# Names of every module this loader fakes out, so `agentic.app.common.tools`
+# can be exec'd standalone without pulling in heavy optional deps
+# (deepagents, langchain_mcp_adapters, etc.) or a real agentic config.
+#
+# Every one of these is faked with a plain `MagicMock` rather than a real
+# import or a hand-written stub object/lambda: `tools.py` only *uses* these
+# names as decorators (`@Bean()`, `@Autowired()`, `@tool`), type hints
+# (`AgentRegistry | None`), or classes it calls at call time (e.g.
+# `StructuredTool.from_function(...)`) — none of that is exercised by the
+# functions actually under test here (`split_agentic_cli_command`,
+# `register_workspace_sub_agents`), and `MagicMock` auto-generates whatever
+# attribute/callable/magic-method (`__or__` for the `X | None` unions,
+# `__call__` for decorators, etc.) is accessed, so there is nothing to wire
+# up by hand.
+#
+# IMPORTANT: several of these (e.g. "agentic.app.config",
+# "agentic.app.common.custom_tools") are *real* modules that other test
+# files (test_cli_agents.py, test_custom_tools.py) import and use as-is.
+# If this module happens to be imported/collected in the same pytest
+# session (pytest imports every collected test file up front, regardless
+# of run order), naively fetching an already-imported real module from
+# `sys.modules` and overwriting its attributes in place would permanently
+# replace e.g. the real `AgenticConfig`/`update_custom_tool` with fakes for
+# the rest of the session, breaking unrelated tests. To avoid that, every
+# fake module below is installed fresh via `sys.modules[name] = MagicMock()`
+# (never mutating a pre-existing module object), and the previous
+# `sys.modules` state is restored once this module has finished loading.
+_FAKE_MODULE_NAMES = (
+    "agentic",
+    "agentic.app",
+    "agentic.app.common",
+    "cndi.annotations",
+    "deepagents",
+    "deepagents.backends",
+    "langchain.chat_models",
+    "langchain_core.runnables",
+    "langchain_core.tools",
+    "langchain_mcp_adapters.client",
+    "langchain_tavily",
+    "agentic.app.agents",
+    "agentic.app.common.custom_tools",
+    "agentic.app.common.middleware",
+    "agentic.app.config",
+)
 
 
 def _load_common_tools_module():
-    _ensure_module("agentic", package=True)
-    _ensure_module("agentic.app", package=True)
-    _ensure_module("agentic.app.common", package=True)
+    # Snapshot whatever's currently in sys.modules for every name we're
+    # about to fake, so it can be restored afterward instead of clobbered.
+    originals = {name: sys.modules.get(name) for name in _FAKE_MODULE_NAMES}
 
-    annotations = _ensure_module("cndi.annotations")
-    annotations.Autowired = lambda *args, **kwargs: (lambda obj: obj)
-    annotations.Bean = lambda *args, **kwargs: (lambda obj: obj)
+    for name in _FAKE_MODULE_NAMES:
+        sys.modules[name] = MagicMock(name=name)
 
-    deepagents = _ensure_module("deepagents")
-    deepagents.create_deep_agent = lambda *args, **kwargs: None
-    deepagents.FilesystemPermission = type("FilesystemPermission", (), {})
+    try:
 
-    backends = _ensure_module("deepagents.backends")
-    dummy_backend = type("DummyBackend", (), {})
-    backends.CompositeBackend = dummy_backend
-    backends.FilesystemBackend = dummy_backend
-    backends.LocalShellBackend = dummy_backend
-
-    chat_models = _ensure_module("langchain.chat_models")
-    chat_models.init_chat_model = lambda *args, **kwargs: None
-
-    runnables = _ensure_module("langchain_core.runnables")
-    runnables.RunnableConfig = dict
-
-    tools_module = _ensure_module("langchain_core.tools")
-    tools_module.BaseTool = type("BaseTool", (), {})
-    tools_module.tool = lambda func: func
-
-    class StructuredTool:
-        @staticmethod
-        def from_function(**kwargs):
-            return kwargs
-
-    tools_module.StructuredTool = StructuredTool
-
-    client_module = _ensure_module("langchain_mcp_adapters.client")
-    client_module.MultiServerMCPClient = type("MultiServerMCPClient", (), {})
-
-    tavily_module = _ensure_module("langchain_tavily")
-    tavily_module.TavilySearch = type("TavilySearch", (), {})
-
-    agents_module = _ensure_module("agentic.app.agents")
-    agents_module.AgentRegistry = type("AgentRegistry", (), {})
-
-    custom_tools_module = _ensure_module("agentic.app.common.custom_tools")
-    custom_tools_module.CustomToolLoader = type("CustomToolLoader", (), {})
-    custom_tools_module.create_custom_tool = lambda *args, **kwargs: None
-    custom_tools_module.update_custom_tool = lambda *args, **kwargs: None
-
-    middleware_module = _ensure_module("agentic.app.common.middleware")
-    middleware_module.ToolNotifierMiddleware = type("ToolNotifierMiddleware", (), {})
-
-    config_module = _ensure_module("agentic.app.config")
-    config_module.AgenticConfig = type("AgenticConfig", (), {})
-    config_module.ToolConfig = type("ToolConfig", (), {})
-    config_module.AgentConfig = type("AgentConfig", (), {})
-
-    module_path = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "agentic"
-        / "app"
-        / "common"
-        / "tools.py"
-    )
-    spec = importlib.util.spec_from_file_location("common_tools_under_test", module_path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+        module_path = (
+            Path(__file__).resolve().parents[2]
+            / "src"
+            / "agentic"
+            / "app"
+            / "common"
+            / "tools.py"
+        )
+        spec = importlib.util.spec_from_file_location("common_tools_under_test", module_path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        # Restore sys.modules exactly as it was before this function ran,
+        # regardless of success/failure, so real modules imported by other
+        # test files are never left pointing at these fakes.
+        for name, original in originals.items():
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
 
 
 common_tools = _load_common_tools_module()
