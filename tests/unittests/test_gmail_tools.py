@@ -12,6 +12,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import agentic.agentic_mcp.gmail.tools as gmail_tools
+from agentic.agentic_mcp.gmail.tools import get_attachments_metadata, get_message_body, GMailTool
+
 
 def _load_gmail_tools_module():
     module_path = (
@@ -27,12 +30,6 @@ def _load_gmail_tools_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
-
-
-gmail_tools = _load_gmail_tools_module()
-GMailTool = gmail_tools.GMailTool
-get_attachments_metadata = gmail_tools.get_attachments_metadata
-get_message_body = gmail_tools.get_message_body
 
 
 def test_get_attachments_metadata_returns_empty_list_when_no_attachments():

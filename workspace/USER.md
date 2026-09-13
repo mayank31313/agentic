@@ -1,3 +1,4 @@
-# USER.md
-
-Add your persistent profile details here.
+name: Mayank
+role: Developer
+interests: ["Programming", "Problem-solving"]
+preferred_color: orange

@@ -53,7 +53,7 @@ def _load_middleware_module():
     adapters.AdapterRegistry = AdapterRegistry
 
     module_path = (
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[2]
         / "src"
         / "agentic"
         / "app"

@@ -345,6 +345,8 @@ def update(agent_name, config_source, instructions_source, file):
         config_data.update(patch)  # shallow merge
 
     if instructions_source is not None:
+        if instructions_source.startswith('/workspace/'):
+            instructions_source = instructions_source.replace('/workspace/', agentic_config.workspace + '/')
         instructions_text = _resolve_text(instructions_source)
 
     agent_config, errors = _build_and_validate_agent_config(

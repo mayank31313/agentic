@@ -63,7 +63,7 @@ torch = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests/unittests"]
 env_files=[".env"]
 markers = [
     "docker: integration tests that require a running Docker daemon and docker compose",

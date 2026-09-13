@@ -97,17 +97,15 @@ class ToolsRegistry:
         self.tools[name] = func
         logger.debug(f"Tool Registered {name}")
 
-    def get_tools(self, tool_names: list[str], deniel_tool_names=None) -> list[BaseTool]:
-        if deniel_tool_names is None:
-            deniel_tool_names = {}
+    def get_tools(self, tool_names: list[str], denied_tool_names=None) -> list[BaseTool]:
+        if denied_tool_names is None:
+            denied_tool_names = set()
         tools = set()
-        for tool_name in tool_names:
-            if tool_name in self.tools:
-                tools.add(tool_name)
-                continue
 
+        for tool_name in tool_names:
             for tool in self.tools:
-                if re.match(tool_name, tool) and tool_name not in deniel_tool_names:
+                if (re.match(tool_name, tool) and
+                        (denied_tool_names is None or all(not re.match(denied_tool, tool) for denied_tool in denied_tool_names))):
                     tools.add(tool)
 
         return list(self.tools[x] for x in tools)
@@ -230,7 +228,7 @@ def _create_sub_agent(agent_config: AgentConfig, tool_registry: "ToolsRegistry",
         else model_config.api_key.resolve(),
     )
 
-    tools_ = tool_registry.get_tools(list(map(lambda x: x.name, agent_config.tools)))
+    tools_ = tool_registry.get_tools(list(map(lambda x: x.name, agent_config.tools)), agent_config.denied_tools)
     logger.info(f"Creating agent {agent_config.name} with tools: {[tool.name for tool in tools_]}")
     agent_skill_paths = set()
     routes = {}
