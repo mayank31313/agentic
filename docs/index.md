@@ -2,9 +2,10 @@
 
 **Agentic** is a personal AI assistant platform (inspired by projects like OpenClaw) that runs as a long-lived bot, talks to you over chat channels like Telegram, and can autonomously plan and execute multi-step tasks using LLMs, tools, MCP servers, scheduled jobs, and durable memory.
 
-📖 **[Read the full documentation](https://mayank31313.github.io/agentic/)**
-
 It's built around a config-driven agent runtime: you describe agents, models, skills, and tools in a single `agentic.json` file, and the bot wires everything together — chat channel, LLM backend(s), MCP tool servers, scheduler, and a WebSocket/REST gateway — with no custom glue code required for common integrations.
+
+[:fontawesome-brands-github: View on GitHub](https://github.com/mayank31313/agentic){ .md-button .md-button--primary }
+[Contributing guide](https://github.com/mayank31313/agentic/blob/main/CONTRIBUTING.md){ .md-button }
 
 ## Why Agentic exists
 
@@ -27,20 +28,20 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 | **Home-lab / infrastructure control** | Proxmox MCP tools let the assistant inspect and manage VMs/containers on a Proxmox hypervisor. |
 | **Image generation** | Stable Diffusion MCP tools plus a `generate_image` tool let the assistant create images on request (local or remote SD backend). |
 | **PDF parsing** | `pdf_parser` MCP tools (`extract_pdf_text`, `extract_pdf_metadata`, `extract_pdf_text_from_url`) let the assistant read text/metadata from local or remote PDF files. |
-| **Text-to-speech / audio** | `transformers`, `torch`, `soundfile`, and `sentencepiece` support local TTS pipelines (see `downloads/` for generated audio samples). |
+| **Text-to-speech / audio** | `transformers`, `torch`, `soundfile`, and `sentencepiece` support local TTS pipelines. |
 | **Scheduled / recurring tasks (cron)** | An APScheduler-backed cron subsystem (`cron_schedules.json`) runs background sub-agents on a schedule — e.g. hourly memory compaction that summarizes the day's activity and reports back over Telegram. |
 | **Long-term memory management** | `memory_retriever.py` and `memory_compaction.py` distill daily memory logs into a condensed `MEMORY.md`, so the assistant retains high-value context without unbounded log growth. |
 | **Remote/streaming clients** | A FastAPI + WebSocket gateway (`app/gateway`) exposes the bot over HTTP/WebSocket for custom front-ends, alongside a Python WebSocket client (`websocket_client/`). |
 | **Search-augmented answers** | Tavily web search integration (`langchain-tavily`) for up-to-date, grounded answers. |
 | **Secrets management** | Secrets (bot tokens, API keys) are resolved via a config-driven env provider (`env://VAR_NAME` references in `application.yml`), keeping real values out of plaintext config. |
-| **Extensible via skills & MCP** | Drop new capabilities into `src/skills/` (Markdown "skill" definitions, e.g. the `agentic-cli` skill that teaches the assistant to manage its own config) or point at additional MCP servers. |
+| **Extensible via skills & MCP** | Drop new capabilities into `src/skills/` (Markdown "skill" definitions) or point at additional MCP servers. |
 | **CLI for operating the bot** | The `agentic` CLI can start the bot server, inspect/edit `agentic.json` via JSONPath, list configured agents, run an agent with a one-off task, and send test messages. |
 
 ## Architecture overview
 
 ```
 [Telegram / WebSocket clients]
-            │   
+            │
             ▼
      [Channel Adapter]  ──▶  [Core AI Agent Engine] ──▶ [MCP Tool Servers: Gmail, Proxmox, Stable Diffusion, ...]
             │                       │
@@ -51,31 +52,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
    [FastAPI/WebSocket Gateway]
 ```
 
-See [`architecture.md`](docs/architecture.md) for the conceptual component/data-flow breakdown.
-
-### Project layout
-
-```
-src/
-  agentic/
-    app/              # Bot core: agents, config, channels, gateway, scheduler, memory
-      channels/       # Telegram (and future) channel adapters
-      gateway/        # FastAPI + WebSocket adapter for external clients
-      scheduler/      # Cron-based scheduling of background sub-agent tasks
-    agentic_mcp/       # MCP tool servers
-      gmail/           # Gmail integration tools
-      proxmox/         # Proxmox VE management tools
-      stable_diffusion/# Image generation tools
-    cli/               # `agentic` command-line interface (config, agents, mcp, message)
-    websocket_client/  # Example WebSocket client for the gateway
-    bot_app.py         # Application entry point / bootstrap
-  skills/              # Markdown-based skill definitions loaded by the agent
-resources/
-  agentic.json         # Agent/model/tool/MCP configuration (the "brain" wiring)
-  application.yml       # Runtime/framework config (secrets provider, channels, brokers)
-cron_schedules.json     # Scheduled background tasks (e.g. hourly memory compaction)
-docker-compose.yaml     # `bot` (assistant) + `mcp` (tool server) services
-```
+See the [Architecture](architecture.md) page for the conceptual component/data-flow breakdown.
 
 ## Tech stack
 
@@ -142,6 +119,7 @@ docker-compose up --build
 ```
 
 This starts:
+
 - `bot` — the assistant/chat runtime (health-checked on `:5000/health`)
 - `mcp` — the MCP tool server exposing Gmail, Proxmox, and Stable Diffusion tools on `:8082`
 
@@ -152,30 +130,17 @@ This starts:
 ## Extending Agentic
 
 - **Add a tool/integration:** create a new MCP server under `src/agentic/agentic_mcp/<your_tool>/` and register it in `resources/agentic.json` under `mcpServers`.
-- **Add an agent:** create `workspace/agents/<name>/instructions.md` — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for the full walkthrough.
-- **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically — see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md) for a step-by-step guide.
+- **Add an agent:** create `workspace/agents/<name>/instructions.md` — see [Creating agents and skills](creating-agents-and-skills.md) for the full walkthrough.
+- **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically — see [Creating agents and skills](creating-agents-and-skills.md) for a step-by-step guide.
 - **Add a channel:** implement a new adapter under `src/agentic/app/channels/` alongside the existing Telegram adapter.
 - **Add a scheduled job:** append an entry to `cron_schedules.json` with a cron expression, delivery target, and sub-agent definition.
 - **Change the persistent data schema:** edit `src/agentic/app/db/models.py` and add a matching Alembic migration under `alembic/versions/` (`uv run alembic revision -m "..."`, then hand-fill `upgrade`/`downgrade`); migrations run automatically (`alembic upgrade head`) whenever the MCP server starts.
 
 ## Contributing
 
-Contributions are welcome — bug fixes, new MCP tools/integrations, channel adapters, skills, or documentation improvements. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup instructions, coding guidelines, and how to submit a pull request or maintain a fork.
-
-## Documentation
-
-The full documentation site (built with [MkDocs](https://www.mkdocs.org/) + [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)) is published at **https://mayank31313.github.io/agentic/** and deployed automatically to GitHub Pages on every push to `main` that touches `docs/**` or `mkdocs.yml` (see [`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
-
-To preview it locally:
-
-```powershell
-uv sync --only-group docs
-uv run --no-sync mkdocs serve
-```
-
-Then open http://127.0.0.1:8000/. Source pages live under [`docs/`](docs/) and are configured in [`mkdocs.yml`](mkdocs.yml).
+Contributions are welcome — bug fixes, new MCP tools/integrations, channel adapters, skills, or documentation improvements. See the [Contributing guide](https://github.com/mayank31313/agentic/blob/main/CONTRIBUTING.md) on GitHub for setup instructions, coding guidelines, and how to submit a pull request or maintain a fork.
 
 ## License
 
-This project is licensed under the **MIT License with an Attribution Requirement** — see [`LICENSE`](LICENSE) for full terms. In short: you're free to use, modify, distribute, and fork this project, but any use or derivative work must include clear acknowledgement of the original author, **Mayank Shinde**, and the original **Agentic** project.
+This project is licensed under the **MIT License with an Attribution Requirement** — see the [`LICENSE`](https://github.com/mayank31313/agentic/blob/main/LICENSE) file on GitHub for full terms. In short: you're free to use, modify, distribute, and fork this project, but any use or derivative work must include clear acknowledgement of the original author, **Mayank Shinde**, and the original **Agentic** project.
 

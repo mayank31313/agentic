@@ -121,6 +121,22 @@ Please ensure:
 - Existing tests pass before opening a PR.
 - Bug fixes include a regression test when possible.
 
+## Documentation site
+
+The docs site (`docs/`, configured via `mkdocs.yml`) is built with MkDocs +
+Material for MkDocs and deployed to GitHub Pages by
+[`.github/workflows/docs.yml`](.github/workflows/docs.yml) on every push to
+`main` that touches `docs/**` or `mkdocs.yml`. To preview changes locally:
+
+```powershell
+uv sync --only-group docs
+uv run --no-sync mkdocs serve
+```
+
+Then open http://127.0.0.1:8000/. Internal planning notes under
+`docs/superpowers/` are intentionally excluded from the published site
+(`exclude_docs` in `mkdocs.yml`) — don't add new user-facing pages there.
+
 ## Submitting a pull request
 
 1. Ensure your branch is up to date with `main` (rebase or merge as needed).
