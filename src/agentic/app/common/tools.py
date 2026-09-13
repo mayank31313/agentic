@@ -98,7 +98,7 @@ class ToolsRegistry:
         logger.debug(f"Tool Registered {name}")
 
     def get_tools(self, tool_names: list[str], denied_tool_names=None) -> list[BaseTool]:
-        if denied_tool_names is not None:
+        if denied_tool_names is None:
             denied_tool_names = set()
         tools = set()
 
