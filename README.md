@@ -133,6 +133,8 @@ uv run agentic agents list
 uv run agentic message add "Hello, this is a test message"
 ```
 
+See the [CLI reference](https://mayank31313.github.io/agentic/cli/) (or `docs/cli.md`) for the full command list (agents, config, mcp, message, tools).
+
 ### 4. Run with Docker Compose
 
 ```powershell
@@ -170,10 +172,11 @@ To preview it locally:
 
 ```powershell
 uv sync --only-group docs
+$env:NO_MKDOCS_2_WARNING = "true"  # silence mkdocs-material's MkDocs-2.0 banner
 uv run --no-sync mkdocs serve
 ```
 
-Then open http://127.0.0.1:8000/. Source pages live under [`docs/`](docs/) and are configured in [`mkdocs.yml`](mkdocs.yml).
+Then open http://127.0.0.1:8000/. Source pages live under `docs/` and are configured in [`mkdocs.yml`](mkdocs.yml).
 
 ## License
 

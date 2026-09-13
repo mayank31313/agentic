@@ -110,6 +110,8 @@ uv run agentic agents list
 uv run agentic message add "Hello, this is a test message"
 ```
 
+See the [CLI reference](cli.md) for the full command list (agents, config, mcp, message, tools).
+
 ### 4. Run with Docker Compose
 
 ```powershell
