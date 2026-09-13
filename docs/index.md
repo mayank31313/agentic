@@ -22,7 +22,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 | Use case | How Agentic handles it |
 |---|---|
 | **Chat with an AI assistant from Telegram** | `python-telegram-bot` channel wired straight into the agent runtime — message the bot and it responds, keeps context, and can ask for approval before running risky actions. |
-| **Multi-agent configuration** | Define multiple named agents in `agentic.json`, each with its own model, system prompt, workspace, skills, and allow/deny tool lists. |
+| **Multi-agent configuration** | Define multiple named agents as `workspace/agents/<name>/instructions.md` files, each with its own model, system prompt, workspace, skills, and tool permissions. |
 | **Tool use with human-in-the-loop approval** | Tools (e.g. `run_shell_command`) can be flagged `require_approval: true` so the assistant must ask before executing anything destructive. |
 | **Email automation** | Gmail MCP tools let the assistant read/send email using Google API credentials (OAuth token stored under `credentials/`). |
 | **Home-lab / infrastructure control** | Proxmox MCP tools let the assistant inspect and manage VMs/containers on a Proxmox hypervisor. |
@@ -35,7 +35,7 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
 | **Search-augmented answers** | Tavily web search integration (`langchain-tavily`) for up-to-date, grounded answers. |
 | **Secrets management** | Secrets (bot tokens, API keys) are resolved via a config-driven env provider (`env://VAR_NAME` references in `application.yml`), keeping real values out of plaintext config. |
 | **Extensible via skills & MCP** | Drop new capabilities into `src/skills/` (Markdown "skill" definitions) or point at additional MCP servers. |
-| **CLI for operating the bot** | The `agentic` CLI can start the bot server, inspect/edit `agentic.json` via JSONPath, list configured agents, run an agent with a one-off task, and send test messages. |
+| **CLI for operating the bot** | The `agentic` CLI can start the bot server, inspect/edit `agentic.json` via JSONPath, and list agents. `agents run` and `message add` are currently placeholders. |
 
 ## Architecture overview
 
@@ -134,7 +134,7 @@ This starts:
 - **Add a tool/integration:** create a new MCP server under `src/agentic/agentic_mcp/<your_tool>/` and register it in `resources/agentic.json` under `mcpServers`.
 - **Add an agent:** create `workspace/agents/<name>/instructions.md` — see [Creating agents and skills](creating-agents-and-skills.md) for the full walkthrough.
 - **Add a skill:** drop a folder with a `SKILL.md` (and any helper scripts) under `src/skills/`; the agent's skills middleware picks it up automatically — see [Creating agents and skills](creating-agents-and-skills.md) for a step-by-step guide.
-- **Add a channel:** implement a new adapter under `src/agentic/app/channels/` alongside the existing Telegram adapter.
+- **Add a channel:** implement a new adapter under `src/agentic/app/gateway/adapters/` alongside the existing Telegram adapter.
 - **Add a scheduled job:** append an entry to `cron_schedules.json` with a cron expression, delivery target, and sub-agent definition.
 - **Change the persistent data schema:** edit `src/agentic/app/db/models.py` and add a matching Alembic migration under `alembic/versions/` (`uv run alembic revision -m "..."`, then hand-fill `upgrade`/`downgrade`); migrations run automatically (`alembic upgrade head`) whenever the MCP server starts.
 
