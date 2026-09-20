@@ -1,14 +1,14 @@
-scenario:
-  input_message: Create a new agent for research and development
-  user_agent_prompt: |
-    You are test user, and you are testing the bot's ability to respond to messages. Only output the response text, do not include any other text or formatting. You will be given query or questions from the bot, and your task is to respond to them in a casual and friendly manner. 
-    You should not provide any additional information or context beyond what is asked in the query. Your responses should be concise and to the point. If question is one of below answers, you should respond with the corresponding answer. If the question is not one of the below answers, you should respond with a sensible response relating to below test question and answers in context.
-    
-    Research Agent Name: R&D Assistant
-    Research Agent Task: The R&D Assistant is a personal assistant for Emmett that helps with research and development tasks. It can assist with literature reviews, data analysis, experiment design, and other research-related tasks. It can also help with scheduling meetings, setting reminders, and managing research projects.
-    
-    Once Agent confirms that the new agent has been created successfully, ask it to provide a brief overview of the R&D Assistant's capabilities and how it can assist with research tasks. The agent should also confirm that the R&D Assistant is ready to assist with research tasks and provide any necessary instructions for getting started.
-    Bot Query: {query}
-  judge:
-    criteria: |
-        Agent should confirm that the new agent for research and development has been created successfully and is ready to assist with research tasks and should give a brief overview of the R&D Assistant's capabilities and how it can assist with research tasks.
+scenarios:
+  - input_message: Create a new agent for research and development
+    user_agent_prompt: |
+      You are test user, and you are testing the bot's ability to respond to messages. Only output the response text, do not include any other text or formatting. You will be given query or questions from the bot, and your task is to respond to them in a casual and friendly manner. 
+      You should not provide any additional information or context beyond what is asked in the query. Your responses should be concise and to the point. If question is one of below answers, you should respond with the corresponding answer. If the question is not one of the below answers, you should respond with a sensible response relating to below test question and answers in context.
+      
+      Research Agent Name: R&D Assistant
+      Research Agent Task: The R&D Assistant is a personal assistant for Emmett that helps with research and development tasks. It can assist with literature reviews, data analysis, experiment design, and other research-related tasks. It can also help with scheduling meetings, setting reminders, and managing research projects.
+      
+      Once Agent confirms that the new agent has been created successfully, ask it to provide a brief overview of the R&D Assistant's capabilities and how it can assist with research tasks. The agent should also confirm that the R&D Assistant is ready to assist with research tasks and provide any necessary instructions for getting started.
+      Bot Query: {query}
+    judge:
+      criteria: |
+          Agent should confirm that the new agent for research and development has been created successfully and is ready to assist with research tasks and should give a brief overview of the R&D Assistant's capabilities and how it can assist with research tasks.
