@@ -41,6 +41,44 @@ class SkillsConfig(BaseModel):
     )
 
 
+class EmbeddingConfig(BaseModel):
+    """Config for the embedding model used by vector-store backed memory.
+
+    ``provider`` selects the `langchain` embeddings implementation:
+    - "huggingface": local `sentence-transformers` model (offline, no API key)
+    - "openai": OpenAI-compatible embeddings endpoint (uses ``base_url``/``api_key``)
+    """
+
+    provider: str = Field(default="huggingface", description="Embeddings provider")
+    model: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        description="Embedding model name/id",
+    )
+    base_url: str | None = Field(default=None)
+    api_key: str | FromEnv | None = Field(default=None, union_mode="left_to_right")
+
+
+class VectorStoreConfig(BaseModel):
+    """Config for the pluggable vector-store backend used for semantic memory.
+
+    ``backend`` picks the `langchain` `VectorStore` implementation via
+    `agentic.app.vectorstore_factory.get_vector_store`:
+    - "in_memory": `langchain_core.vectorstores.InMemoryVectorStore` (no external deps)
+    - "chroma": local/embedded Chroma persisted under ``persist_directory``
+    - "elasticsearch": dense-vector kNN search against an Elasticsearch cluster
+    """
+
+    backend: str = Field(default="in_memory", description="Vector store backend")
+    enabled: bool = Field(default=True)
+    collection_name: str = Field(default="agentic_memory")
+    persist_directory: str | None = Field(
+        default=None, description="Used by file-backed backends (e.g. chroma)"
+    )
+    es_host: str = Field(default="localhost")
+    es_port: int = Field(default=9200)
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+
+
 class ModelConfig(BaseModel):
     model: str = Field(
         description="Model name with provider, e.g., openai:gemma-4-e2b-it"
@@ -71,6 +109,17 @@ class AgentConfig(BaseModel):
     )
     agent_model_config: Optional[ModelConfig] = Field(None, description="Agent model config")
     instructions: Optional[str] = Field(default=None)
+    enable_shell_backend: bool = Field(
+        default=False,
+        description=(
+            "Opt-in: mount an AgenticShellBackend (filesystem + unrestricted local "
+            "shell execution) at '/shell/' for this agent. Requires Human-in-the-Loop "
+            "approval on the backend's 'execute' tool (always enforced when this is "
+            "True). Off by default because shell access is unrestricted and can "
+            "bypass filesystem permission rules; see LocalShellBackend's security "
+            "warning."
+        ),
+    )
 
     @staticmethod
     def parse_raw_file(path) -> tuple[dict, str]:
@@ -128,6 +177,7 @@ class AgenticConfig(BaseModel):
     mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
     tools: list[ToolConfig] = Field(default_factory=list, description="List of tools")
+    vector_store: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
 
     def get_tool(self, tool_name: str):
         return next(filter(lambda x: x.enabled and x.name == tool_name, self.tools))

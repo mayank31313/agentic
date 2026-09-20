@@ -29,6 +29,14 @@ BOOTSTRAP_CONFIG_PATH = "tests/resources/BOOTSTRAP.md"
 
 logger = logging.getLogger(__name__)
 
+class Judge(BaseModel):
+    criteria: str = Field(description="The criteria to evaluate the response against")
+
+class Scenario(BaseModel):
+    input_message: str
+    judge: Judge
+    user_agent_prompt: str = Field(description="Prompt to initialize the user agent")
+
 class JudgeVerdict(BaseModel):
     passed: bool = Field(description="Whether the response meets the criteria")
     reasoning: str = Field(description="Brief explanation for the verdict")
@@ -74,7 +82,8 @@ def compose_stack():
                 "mcp-*",
                 "agentic_mcp*",
                 "execute_code",
-                "run_shell_command"
+                "run_shell_command",
+                "agentic_run_agentic_cli",
               ])
     with open(AGENTIC_CONFIG_JSON, "w") as config_file:
         agentic_config = AgenticConfig(
@@ -89,7 +98,7 @@ def compose_stack():
                         "env_key": "NVIDIA_API_KEY"
                     }
               }),
-                # ModelConfig.model_validate({
+            # ModelConfig.model_validate({
                 # "model": "openai:gemma-4-e2b-it",
                 # "model_id": "custom-gemma-4-e2b-it",
                 # "context_window": 256000,
@@ -153,20 +162,8 @@ def reset():
         os.remove(CRON_SCHEDULE_FILENAME)
     yield
 
-@pytest.fixture(scope="session")
-def user_agent():
-    load_dotenv()
-    user_agent_prompt = """You are test user, and you are testing the bot's ability to respond to messages. Only output the response text, do not include any other text or formatting. You will be given query or questions from the bot, and your task is to respond to them in a casual and friendly manner. 
-    You should not provide any additional information or context beyond what is asked in the query. Your responses should be concise and to the point. If question is one of below answers, you should respond with the corresponding answer. If the question is not one of the below answers, you should respond with a sensible response relating to below test question and answers in context.
-    
-    Bot Name: Agentic
-    User Name: Emmett
-    Bot task: Bot is a personal assistant for emmett and it assists emmett with various daily tasks and provide information as needed, schedule appointments, reminders, infrastructure management
-    About User: Emmett is a software engineer and he is working on a project that involves building a personal assistant bot. He is looking for a bot that can help him with various tasks and provide information as needed. He is also looking for a bot that can help him with scheduling appointments, reminders, and infrastructure management.
-    
-    Bot Query: {query}
-    """
 
+def get_user_agent(user_agent_prompt: str = None):
     model = init_chat_model(
         model="openai:nvidia/nemotron-3-super-120b-a12b",
         base_url=f"https://integrate.api.nvidia.com/v1",

@@ -49,15 +49,19 @@ _FAKE_MODULE_NAMES = (
     "cndi.annotations",
     "deepagents",
     "deepagents.backends",
+    "langchain.agents.middleware",
     "langchain.chat_models",
     "langchain_core.runnables",
     "langchain_core.tools",
     "langchain_mcp_adapters.client",
     "langchain_tavily",
     "agentic.app.agents",
+    "agentic.app.common.backends",
     "agentic.app.common.custom_tools",
     "agentic.app.common.middleware",
     "agentic.app.config",
+    "agentic.vector_memory",
+    "agentic.vector_memory.tools",
 )
 
 

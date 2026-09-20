@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from cndi.annotations import Component, Bean
+from cndi.annotations import Bean
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend
 from deepagents.backends.filesystem import FilesystemBackend
@@ -22,8 +22,10 @@ from transformers import (
     pipeline,
 )
 
+from agentic.app.common.backends import AgenticShellBackend, SHELL_BACKEND_INTERRUPT_ON
 from agentic.app.config import AgentConfig, AgentToolConfig
 
+logger = logging.getLogger(__name__)
 
 def read_agents_md(path: str) -> str:
     p = Path(path)
@@ -97,7 +99,7 @@ def get_text_to_speech_pipeline():
 
     with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
-        print(f"Total entries: {len(names)}")
+        logger.info(f"Total entries: {len(names)}")
         for n in names[:15]:
             print(n)
         with zf.open("spkrec-xvect/cmu_us_slt_arctic-wav-arctic_b0516.npy") as f:
@@ -141,7 +143,9 @@ def get_main_agent(
     )
 
     routes = {
-        "/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),
+        f"/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),
+        f"/workspace": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
+        f"/resources/": FilesystemBackend(root_dir="./resources", virtual_mode=True),
     }
     agent_skill_paths = []
     for skill_config in agent_config.skills:
@@ -153,17 +157,16 @@ def get_main_agent(
         )
         agent_skill_paths.append(skill_config.virtual_path)
 
+    # if agent_config.enable_shell_backend:
+    #     logger.info(f"Mounting AgenticShellBackend at /shell/ for agent {agent_config.name}")
+    #     routes["/shell/"] = AgenticShellBackend(root_dir="./workspace", virtual_mode=True)
+    #     interrupt_tool_on.update(SHELL_BACKEND_INTERRUPT_ON)
+
     agent = create_deep_agent(
         model=model,
         backend=CompositeBackend(
-            default=FilesystemBackend(root_dir="./workspace", virtual_mode=True),
-            routes={
-                "/workspace": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
-                "/skills/": FilesystemBackend(root_dir="src/skills", virtual_mode=True),
-                "/resources/": FilesystemBackend(
-                    root_dir="resources", virtual_mode=True
-                ),
-            },
+            default=AgenticShellBackend(root_dir="./workspace", virtual_mode=True),
+            routes=routes,
         ),
         skills=agent_skill_paths,
         system_prompt=system_prompt,

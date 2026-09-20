@@ -1,5 +1,5 @@
 ---
-name: user_profile_manager
+name: user-profile-manager
 description: >-
   Manages the user's personal profile information stored in the workspace's root `USER.md` file. Use this skill when a user asks to read, update, or query their personal settings, preferences, or information stored in `USER.md`. Trigger phrases include: "Manage my profile", "Get my preferences", "Update user settings", or "Show my profile info".
 license: MIT

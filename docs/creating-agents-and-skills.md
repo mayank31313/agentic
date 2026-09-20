@@ -72,6 +72,7 @@ only `---`:
    | `tools` | array of `{name, require_approval, approval_text}` | Per-tool approval gating (`require_approval: true` triggers a human-in-the-loop interrupt). |
    | `denied_tools` | array of strings | Tool names to exclude even if otherwise available. |
    | `skills` | array of `{path, virtual_path}` | Filesystem path(s) to skill directories and the virtual path the agent sees them under (usually `./src/skills/` → `/skills/`). |
+   | `enable_shell_backend` | boolean | Default `false`. Opt-in: mounts `AgenticShellBackend` (filesystem + unrestricted local shell execution, see `src/agentic/app/common/backends.py`) at `/shell/`. Every call to its `execute` tool always requires Human-in-the-Loop approval, regardless of `tools`/`denied_tools`. Leave this off unless the agent genuinely needs raw shell access — see `LocalShellBackend`'s security warning in the `deepagents` docs. Independent of the separate, allowlisted `agentic_run_agentic_cli` tool, which is unaffected by this flag. |
 
 2. The system prompt / instructions body (plain Markdown), which becomes
    `agent_config.instructions` and is passed to `create_deep_agent` as the

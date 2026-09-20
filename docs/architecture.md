@@ -26,6 +26,11 @@ setup and usage instructions see the [Home](index.md) page; for contribution gui
   `resources/agentic.json`, and drives the request/response and tool-call loop.
 - **MCP Tool Servers** (`src/agentic/agentic_mcp/`): standalone Model Context Protocol servers
   exposing integrations such as Gmail, Proxmox VE, and Stable Diffusion as callable tools.
+- **Backends** (`src/agentic/app/common/backends.py`): `deepagents` backend implementations
+  mounted into each agent's `CompositeBackend`. `AgenticShellBackend` (filesystem + unrestricted
+  local shell execution) is opt-in per agent via `AgentConfig.enable_shell_backend` and, when
+  enabled, is mounted at `/shell/` with its `execute` tool always requiring Human-in-the-Loop
+  approval. It is independent of the separate, allowlisted `agentic_run_agentic_cli` tool.
 - **Memory & State**: daily memory logs and a condensed `MEMORY.md` (produced by
   `memory_retriever.py`/`memory_compaction.py`) plus a SQLite-backed key/value data store
   (`src/agentic/app/db/`, schema-managed via Alembic, exposed to agents through the
@@ -48,6 +53,7 @@ src/
   agentic/
     app/              # Bot core: agents, config, channels, gateway, scheduler, memory
       channels/       # Telegram (and future) channel adapters
+      common/          # Shared tools/backends/middleware wired into every agent
       gateway/        # FastAPI + WebSocket adapter for external clients
       scheduler/      # Cron-based scheduling of background sub-agent tasks
       db/             # SQLAlchemy models/engine/repository for the SQLite data store

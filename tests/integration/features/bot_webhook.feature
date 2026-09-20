@@ -9,12 +9,5 @@ Feature: Bot webhook health and message delivery
   Scenario: Bot reports healthy
     When I query the bot's health endpoint
     Then the response status is 200
-#    Then connect to bot using websocket and say hey
-    Then Bootstrap agent
-#  Scenario Outline: Cron Job Tests
-#    When I query the bot's health endpoint
-#    Then Send message to bot "<message>" and expect "<criteria>"
-#
-#    Examples:
-#    | message                                     | criteria  |
-#    | create a cron job schedule at 9 AM everyday to send a message via websockets on our chat |       t   |
+    Then Execute agent bootstrap.yaml
+    Then Execute agent create-agent.yaml

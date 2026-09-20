@@ -3,16 +3,38 @@ import uuid
 from pathlib import Path
 
 from agentic.app.common.providers import DateTimeProvider
+from agentic.app.config import VectorStoreConfig
+from agentic.app.memory_retriever import MemoryRetriever, get_memory_retriever
 
 
 class Memory:
-    def __init__(self, workspace: str, session_id: str = None):
+    def __init__(
+        self,
+        workspace: str,
+        session_id: str = None,
+        vector_store_config: VectorStoreConfig | None = None,
+        retriever: MemoryRetriever | None = None,
+    ):
         self.workspace = workspace
         self.memory = []
         self.session_id = session_id or str(uuid.uuid4())
+        # Semantic (vector-store backed) memory — see `add_memory`. Injecting
+        # a pre-built `retriever` (mainly for tests) skips the config-driven
+        # `get_memory_retriever` lookup entirely.
+        self.retriever = retriever or get_memory_retriever(vector_store_config)
 
     def add(self, message):
         self.memory.append(message)
+
+    def add_memory(self, chat_id: int, role: str, content: str) -> None:
+        """Persist a message into semantic (vector-store backed) memory so it
+        can later be recalled via the `memory_search` tool.
+
+        Best-effort: `MemoryRetriever.add_message` already logs and swallows
+        its own failures, so a memory-store outage never breaks a
+        conversation turn.
+        """
+        self.retriever.add_message(chat_id=chat_id, role=role, content=content)
 
     def load(self, file_path_in_workspace: str):
         file_path = os.path.join(self.workspace, file_path_in_workspace)
