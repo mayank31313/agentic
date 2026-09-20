@@ -46,6 +46,9 @@ requires_docker = pytest.mark.skipif(
     shutil.which("docker") is None, reason="docker not available"
 )
 
+FILE_SYSTEM_MOUNTS = {
+
+}
 def bootstrap_main_agent(denied_tools=None):
     """Bootstrap the agentic workspace with a default agent."""
     if os.path.exists(AGENTIC_WORKSPACE_PATH):

@@ -45,27 +45,30 @@ def send_message(text: str, websocket):
 @then(parsers.parse("Execute agent {scenario_file}"))
 def execute_agent(websocket, judge, scenario_file):
     with open(f"tests/integration/scenarios/{scenario_file}", "r") as f:
-        scenario = Scenario(**yaml.load(f, Loader=yaml.FullLoader).get("scenario"))
-    user_agent = get_user_agent(scenario.user_agent_prompt)
-    message, messages = send_message(text=scenario.input_message, websocket=websocket)
-    count = 0
-    while count < 10:
-        logger.info(f"Message from bot: {message}")
-        user_response = user_agent.invoke(dict(query=message.metadata['response'][0]['text']))
-        logger.info(f"User response: {user_response}")
-        message, messages = send_message(text=user_response.content, websocket=websocket)
-        judge_response = judge.invoke(
-            dict(user_query="", response=message.metadata['response'][0]['text'], criterias=scenario.judge.criteria))
+        scenarios = yaml.load(f, Loader=yaml.FullLoader).get("scenarios")
 
-        logger.info(f"Judge verdict: {judge_response}")
-        if judge_response.passed and judge_response.score >= 4:
-            count = 12
-            break
-        else:
-            logger.info(f"Judge failed: {judge_response.reasoning}")
+    for scenario_dict in scenarios:
+        scenario = Scenario(**scenario_dict)
+        user_agent = get_user_agent(scenario.user_agent_prompt)
+        message, messages = send_message(text=scenario.input_message, websocket=websocket)
+        count = 0
+        while count < 10:
+            logger.info(f"Message from bot: {message}")
+            user_response = user_agent.invoke(dict(query=message.metadata['response'][0]['text']))
+            logger.info(f"User response: {user_response}")
+            message, messages = send_message(text=user_response.content, websocket=websocket)
+            judge_response = judge.invoke(
+                dict(user_query="", response=message.metadata['response'][0]['text'], criterias=scenario.judge.criteria))
 
-        count += 1
+            logger.info(f"Judge verdict: {judge_response}")
+            if judge_response.passed and judge_response.score >= 4:
+                count = 12
+                break
+            else:
+                logger.info(f"Judge failed: {judge_response.reasoning}")
 
-    assert judge_response.passed and judge_response.score >= 4, f"Judge failed: {judge_response.reasoning}"
-    if count == 12:
-        logger.info("Agent Bootstrap is complete and there are no questions from bot")
+            count += 1
+
+        assert judge_response.passed and judge_response.score >= 4, f"Judge failed: {judge_response.reasoning}"
+        if count == 12:
+            logger.info("Agent Bootstrap is complete and there are no questions from bot")
