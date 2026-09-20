@@ -46,7 +46,10 @@ class AgenticBot:
                     agenticConfig.models,
                 )
             )
-        self.memory = Memory(workspace=self.agenticConfig.workspace)
+        self.memory = Memory(
+            workspace=self.agenticConfig.workspace,
+            vector_store_config=self.agenticConfig.vector_store,
+        )
 
 
     def initialise_agent(self):
@@ -106,6 +109,7 @@ class AgenticBot:
     async def invoke_agent(self, message, chat_id, message_id, channel_metadata: dict={}):
         channel_name = channel_metadata.get("channel_name", "websocket")
         self.memory.add(dict(text=message, type="user"))
+        self.memory.add_memory(chat_id=chat_id, role="user", content=message)
 
         config = {"configurable": {"thread_id": f"{channel_name}::{chat_id}"}, "callbacks": [self.langfuse_handler]}
         if message.startswith("$decision"):
@@ -169,6 +173,8 @@ Args: {action_requests[0]["args"]}""",
                     if type(content) == dict:
                         response_text.append(content)
 
-        self.memory.add(dict(text="\n".join([c["text"] for c in response_text]), type="agent"))
+        agent_response_text = "\n".join([c["text"] for c in response_text])
+        self.memory.add(dict(text=agent_response_text, type="agent"))
+        self.memory.add_memory(chat_id=chat_id, role="assistant", content=agent_response_text)
         self.memory.write()
         return response_text

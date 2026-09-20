@@ -19,10 +19,13 @@ from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
 from agentic.app.agents import AgentRegistry
+from agentic.app.common.backends import AgenticShellBackend, SHELL_BACKEND_INTERRUPT_ON
 from agentic.app.common.custom_tools import CustomToolLoader, create_custom_tool as _write_custom_tool_files
 from agentic.app.common.custom_tools import update_custom_tool as _update_custom_tool_files
 from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.config import AgenticConfig, ToolConfig, AgentConfig
+from agentic.vector_memory.tools import get_vector_memory_tools
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +78,43 @@ class SubAgentDetails(BaseModel):
         description="Required context and information to complete the task"
     )
 
+class CreateCustomToolInput(BaseModel):
+    name: str = Field(description="snake_case name for the new tool; must be unique")
+    description: str = Field(description="What the tool does; shown to the LLM when deciding to use it")
+    kind: Literal["python", "docker"] = Field(
+        description="'python' for a sandboxed script (stdlib-only, subprocess-executed); "
+                    "'docker' for a containerized script (stronger isolation, needs a Dockerfile)"
+    )
+    tool_args: dict[str, str] = Field(
+        default_factory=dict,
+        description="Mapping of argument name -> type (string|integer|number|boolean|array|object) "
+                    "that the CREATED tool will accept when it is later called. This is NOT a "
+                    "wrapper for this tool's own arguments — pass name/description/kind/etc. as "
+                    "top-level fields, not nested inside this one.",
+    )
+    python_source_path: str | None = Field(
+        default=None,
+        description="Required for kind='python'. Workspace-relative path to a file YOU must write "
+                    "first (with your filesystem write tool) defining a top-level `run(**kwargs)` "
+                    "function, using only stdlib modules (json, math, re, datetime, itertools, "
+                    "statistics, textwrap, typing, decimal, collections, string, random, uuid, "
+                    "dataclasses, enum, functools). No file/network/subprocess/os access is allowed. "
+                    "Do NOT pass source code content directly — write it to a file and pass the path.",
+    )
+    dockerfile_path: str | None = Field(
+        default=None,
+        description="Required for kind='docker'. Workspace-relative path to a Dockerfile you already "
+                    "wrote. Do NOT pass Dockerfile content directly.",
+    )
+    entrypoint_path: str | None = Field(
+        default=None,
+        description="Required for kind='docker'. Workspace-relative path to the container's "
+                    "entrypoint script you already wrote; it reads a JSON object of args from stdin "
+                    "and writes the result to stdout. Do NOT pass script content directly.",
+    )
+    network_access: bool = Field(default=False, description="Docker kind only: allow container network access.")
+    timeout_seconds: int = Field(default=30)
+        
 
 class ToolsRegistry:
     def __init__(self, agentic_config: AgenticConfig):
@@ -241,6 +281,12 @@ def _create_sub_agent(agent_config: AgentConfig, tool_registry: "ToolsRegistry",
         )
         agent_skill_paths.add(skill_config.virtual_path)
 
+    interrupt_on = {}
+    if agent_config.enable_shell_backend:
+        logger.info(f"Mounting AgenticShellBackend at /shell/ for agent {agent_config.name}")
+        routes["/shell/"] = AgenticShellBackend(root_dir="./workspace", virtual_mode=True)
+        interrupt_on.update(SHELL_BACKEND_INTERRUPT_ON)
+
     agent = create_deep_agent(
         model=model,
         backend=CompositeBackend(
@@ -251,8 +297,10 @@ def _create_sub_agent(agent_config: AgentConfig, tool_registry: "ToolsRegistry",
         system_prompt=agent_config.instructions,
         tools=tools_ or [],
         middleware=[tool_notifier_middleware],
+        interrupt_on=interrupt_on or None,
     )
     return agent
+
 
 
 def register_workspace_sub_agents(
@@ -365,119 +413,86 @@ def set_common_tools(
 
     AGENTIC_CLI_GROUPS = {"agents", "config", "mcp", "message", "run", "tools"}
 
-    @tool
-    def agentic_run_agentic_cli(sub_command: str) -> str:
-        """Run a command in the agentic CLI and return its output. Only allows sub_commands use --help for more information.
+    # @tool
+    # def agentic_run_agentic_cli(sub_command: str) -> str:
+    #     """Run a command in the agentic CLI and return its output. Only allows sub_commands use --help for more information.
+    #
+    #     You MUST use this tool for ANY interaction with the Agentic Config
+    #     (`resources/agentic.json` / `AgenticConfig`) or an agent's config
+    #     (`workspace/agents/<name>/instructions.md` / `AgentConfig`) — e.g.
+    #     getting, setting, or otherwise inspecting or mutating config values
+    #     (`agentic config get/set ...`), and listing, validating, creating,
+    #     or updating agents (`agentic agents list/validate/write/update ...`).
+    #     Never edit `resources/agentic.json` or
+    #     `workspace/agents/<name>/instructions.md` directly with a file-write
+    #     tool; always go through this CLI so changes are schema-validated.
+    #     Run with `--help` on any sub_command to see its full usage first.
+    #
+    #     IMPORTANT — command groups are PLURAL: `agents`, `config`, `mcp`,
+    #     `message`. The agent commands are `agentic agents write/update/
+    #     validate/list/run/schema`. There is NO `agentic agent ...`
+    #     (singular) command; do not guess that form.
+    #
+    #     IMPORTANT — quoting: `sub_command` is parsed with POSIX/bash-style
+    #     shell quoting (via `shlex`), NOT the host OS shell, and is then
+    #     executed directly as an argument list (no shell involved). Always
+    #     quote JSON payloads with single quotes exactly like a bash command
+    #     line, e.g.:
+    #
+    #         agents write weather_reporter --config '{"workspace_dir": "./workspace", "name": "weather_reporter", "description": "...", "model_id": "..."}' --instructions '# Weather Reporter\\n\\nYou are ...'
+    #
+    #     This is interpreted the same way regardless of the underlying OS,
+    #     so quoting rules never need to change between platforms.
+    #
+    #     WARNING — apostrophes inside single-quoted values (e.g. "don't")
+    #     will prematurely close the quote and cause an "unbalanced quotes"
+    #     error. Avoid contractions/possessives inside single-quoted JSON
+    #     strings, or escape them as \\' if you must use them.
+    #     """
+    #     try:
+    #         args = split_agentic_cli_command(sub_command)
+    #     except ValueError as e:
+    #         return f"Error: sub_command could not be parsed: {e}"
+    #
+    #     if not args:
+    #         return "Error: sub_command is empty."
+    #
+    #     if args[0] not in AGENTIC_CLI_GROUPS:
+    #         return (
+    #             f"Error: unknown command group '{args[0]}'. Valid top-level "
+    #             f"groups are: {', '.join(sorted(AGENTIC_CLI_GROUPS))} (note: "
+    #             "it is 'agents' plural, not 'agent')."
+    #         )
+    #
+    #     try:
+    #         result = subprocess.run(
+    #             ["uv", "run", "agentic", *args],
+    #             shell=False,
+    #             capture_output=True,
+    #             text=True,
+    #             timeout=30,
+    #         )
+    #         output = result.stdout
+    #         if result.stderr:
+    #             output += f"\n[stderr]\n{result.stderr}"
+    #         return output.strip() or "(command produced no output)"
+    #     except subprocess.TimeoutExpired:
+    #         return "Error: command timed out after 30s"
+    #     except FileNotFoundError as e:
+    #         return f"Error: could not locate the 'uv' executable on PATH: {e}"
+    #     except Exception as e:
+    #         return f"Error running command: {e}"
 
-        You MUST use this tool for ANY interaction with the Agentic Config
-        (`resources/agentic.json` / `AgenticConfig`) or an agent's config
-        (`workspace/agents/<name>/instructions.md` / `AgentConfig`) — e.g.
-        getting, setting, or otherwise inspecting or mutating config values
-        (`agentic config get/set ...`), and listing, validating, creating,
-        or updating agents (`agentic agents list/validate/write/update ...`).
-        Never edit `resources/agentic.json` or
-        `workspace/agents/<name>/instructions.md` directly with a file-write
-        tool; always go through this CLI so changes are schema-validated.
-        Run with `--help` on any sub_command to see its full usage first.
-
-        IMPORTANT — command groups are PLURAL: `agents`, `config`, `mcp`,
-        `message`. The agent commands are `agentic agents write/update/
-        validate/list/run/schema`. There is NO `agentic agent ...`
-        (singular) command; do not guess that form.
-
-        IMPORTANT — quoting: `sub_command` is parsed with POSIX/bash-style
-        shell quoting (via `shlex`), NOT the host OS shell, and is then
-        executed directly as an argument list (no shell involved). Always
-        quote JSON payloads with single quotes exactly like a bash command
-        line, e.g.:
-
-            agents write weather_reporter --config '{"workspace_dir": "./workspace", "name": "weather_reporter", "description": "...", "model_id": "..."}' --instructions '# Weather Reporter\\n\\nYou are ...'
-
-        This is interpreted the same way regardless of the underlying OS,
-        so quoting rules never need to change between platforms.
-
-        WARNING — apostrophes inside single-quoted values (e.g. "don't")
-        will prematurely close the quote and cause an "unbalanced quotes"
-        error. Avoid contractions/possessives inside single-quoted JSON
-        strings, or escape them as \\' if you must use them.
-        """
-        try:
-            args = split_agentic_cli_command(sub_command)
-        except ValueError as e:
-            return f"Error: sub_command could not be parsed: {e}"
-
-        if not args:
-            return "Error: sub_command is empty."
-
-        if args[0] not in AGENTIC_CLI_GROUPS:
-            return (
-                f"Error: unknown command group '{args[0]}'. Valid top-level "
-                f"groups are: {', '.join(sorted(AGENTIC_CLI_GROUPS))} (note: "
-                "it is 'agents' plural, not 'agent')."
-            )
-
-        try:
-            result = subprocess.run(
-                ["uv", "run", "agentic", *args],
-                shell=False,
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            output = result.stdout
-            if result.stderr:
-                output += f"\n[stderr]\n{result.stderr}"
-            return output.strip() or "(command produced no output)"
-        except subprocess.TimeoutExpired:
-            return "Error: command timed out after 30s"
-        except FileNotFoundError as e:
-            return f"Error: could not locate the 'uv' executable on PATH: {e}"
-        except Exception as e:
-            return f"Error running command: {e}"
-
-    tool_registry.register_tool("agentic_run_agentic_cli", agentic_run_agentic_cli)
-    tool_registry.register_tool("run_shell_command", run_shell_command)
+    # tool_registry.register_tool("agentic_run_agentic_cli", agentic_run_agentic_cli)
     tool_registry.register_tool("swamp_sub_agent", swamp_sub_agent)
     tool_registry.register_tool("list_available_tools", list_available_tools)
     tool_registry.register_tool("send_message", send_message)
     tool_registry.register_tool("get_date_time", get_date_time)
 
-    class CreateCustomToolInput(BaseModel):
-        name: str = Field(description="snake_case name for the new tool; must be unique")
-        description: str = Field(description="What the tool does; shown to the LLM when deciding to use it")
-        kind: Literal["python", "docker"] = Field(
-            description="'python' for a sandboxed script (stdlib-only, subprocess-executed); "
-                        "'docker' for a containerized script (stronger isolation, needs a Dockerfile)"
-        )
-        tool_args: dict[str, str] = Field(
-            default_factory=dict,
-            description="Mapping of argument name -> type (string|integer|number|boolean|array|object) "
-                        "that the CREATED tool will accept when it is later called. This is NOT a "
-                        "wrapper for this tool's own arguments — pass name/description/kind/etc. as "
-                        "top-level fields, not nested inside this one.",
-        )
-        python_source_path: str | None = Field(
-            default=None,
-            description="Required for kind='python'. Workspace-relative path to a file YOU must write "
-                        "first (with your filesystem write tool) defining a top-level `run(**kwargs)` "
-                        "function, using only stdlib modules (json, math, re, datetime, itertools, "
-                        "statistics, textwrap, typing, decimal, collections, string, random, uuid, "
-                        "dataclasses, enum, functools). No file/network/subprocess/os access is allowed. "
-                        "Do NOT pass source code content directly — write it to a file and pass the path.",
-        )
-        dockerfile_path: str | None = Field(
-            default=None,
-            description="Required for kind='docker'. Workspace-relative path to a Dockerfile you already "
-                        "wrote. Do NOT pass Dockerfile content directly.",
-        )
-        entrypoint_path: str | None = Field(
-            default=None,
-            description="Required for kind='docker'. Workspace-relative path to the container's "
-                        "entrypoint script you already wrote; it reads a JSON object of args from stdin "
-                        "and writes the result to stdout. Do NOT pass script content directly.",
-        )
-        network_access: bool = Field(default=False, description="Docker kind only: allow container network access.")
-        timeout_seconds: int = Field(default=30)
+    for vector_memory_tool in get_vector_memory_tools(agentic_config.vector_store):
+        tool_registry.register_tool(vector_memory_tool.name, vector_memory_tool)
+
+
 
     def _create_custom_tool_impl(
         name: str,

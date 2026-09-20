@@ -16,7 +16,6 @@ from telegram.ext import Application
 
 from agentic import AgenticConfig
 from agentic.app.bot import AgenticBot
-from agentic.app.config import SkillsConfig
 from agentic.app.constants import AGENTIC_FILE_NAME_PROP
 from agentic.app.gateway.adapters.telegram.bot import is_telegram_channel_enabled
 from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
@@ -79,8 +78,8 @@ def main(
     connection_manager: WebSocketConnectionManager,
     context_threads: ContextThreads,
 ):
-    agentic_bot.initialise_agent()
     """Start the bot."""
+    agentic_bot.initialise_agent()
 
     # Run the bot until the user presses Ctrl-C
     fast_app = get_adapter_gateway(gateway, connection_manager, agentic_bot=agentic_bot)

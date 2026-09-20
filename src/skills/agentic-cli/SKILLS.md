@@ -1,6 +1,6 @@
 ---
 name: agentic-cli
-description: Use this skill whenever the user wants to interact with your configuration or its agentic.json configuration — including starting the bot server, sending messages, reading config values, and adding, creating, updating, removing, listing, or running configured agents (e.g. "add a new agent for image processing", "create an agent that does X", "update the model for the summarizer agent", "remove an agent from the config", "what agents are configured"). Also covers inspecting the config JSON schema and listing available MCP tools. Trigger this any time the user mentions "agentic cli", "agentic.json", the bot app, agent configuration, or asks to check/change any value in the bot's config — including requests that don't literally say "config" but describe adding/editing/removing an agent entry. Always invoke the tool via shell (direct agentic command) rather than guessing at or hand-writing config file contents.
+description: Use this skill whenever the user wants to interact with your configuration or its agentic.json configuration — including starting the bot server, sending messages, reading config values, and adding, creating, updating, removing, listing, or running configured agents (e.g. "add a new agent for image processing", "create an agent that does X", "update the model for the summarizer agent", "remove an agent from the config", "what agents are configured"). Also covers inspecting the config JSON schema and listing available MCP tools. Trigger this any time the user mentions "agentic cli", "agentic.json", the bot app, agent configuration, or asks to check/change any value in the bot's config — including requests that don't literally say "config" but describe adding/editing/removing an agent entry. Always invoke the CLI via your terminal/execute tool (direct `agentic` command) rather than guessing at or hand-writing config file contents.
 ---
 
 # Agentic CLI
@@ -8,12 +8,35 @@ description: Use this skill whenever the user wants to interact with your config
 A Click-based command-line tool (entry point: `agentic`) for managing a bot
 application: starting its server, sending messages, reading/writing its
 `agentic.json` configuration via JSONPath, and listing/running configured
-agents. Run all of these as real shell commands — don't hand-edit
-`agentic.json` or guess at output; call the CLI and read what it prints.
+agents. Run all of these through your **execute/terminal tool** as real
+shell commands — don't hand-edit `agentic.json` or guess at output; invoke
+the CLI with your execute tool and read what it actually prints back.
+
+## How to invoke commands
+
+You have access to a terminal/execute tool (e.g. a "run command"/"execute"
+tool) that runs a shell command and returns its stdout, stderr, and exit
+code. **Always use that tool to run `agentic ...` commands** — never
+fabricate or assume CLI output, and never simulate what a command "would"
+print. Concretely:
+
+- Pass the full command line (e.g. `agentic config get telegram.bot_token`)
+  to the execute tool as a single invocation; don't split it across
+  multiple tool calls unless you're chaining independent commands.
+- For blocking commands (`agentic run`), invoke the tool in **background
+  mode** if your tool supports it, or with an explicit timeout — never run
+  it in a blocking foreground call, since that hangs the whole session.
+- After every invocation, read the **actual returned stdout/stderr and exit
+  code** from the tool result before deciding the command succeeded — a
+  non-zero exit code is a real failure even if some output was printed.
+- If the execute tool exposes a working-directory / `cwd` parameter, set it
+  to the project root (or pass `agentic --cwd <path>`) instead of chaining
+  a separate `cd` command, when possible.
 
 ## Before you start
 
-Confirm the CLI is installed and runnable:
+Confirm the CLI is installed and runnable by running this through your
+execute tool:
 
 ```bash
 agentic --help
@@ -31,13 +54,15 @@ Check the project's `pyproject.toml` for the console-script entry point name
 **Always run `agentic ...` from the project root** — this is also
 where `agentic.json` lives, since `config`/`agents` subcommands read it from
 the **current working directory** by default. If you're not in the project
-root, either `cd` there first or pass an explicit file path as the trailing
-argument where the command supports it.
+root, either set the execute tool's working directory / `cd` there first,
+or pass an explicit file path as the trailing argument where the command
+supports it.
 
-## Preferred invocation: Direct agentic command
+## Preferred invocation: Direct agentic command via the execute tool
 
-Invoke the agentic CLI directly and capture the output programmatically
-when needed (which is almost always, in an agent context).
+Run the agentic CLI directly through your execute/terminal tool and capture
+the returned output programmatically when needed (which is almost always,
+in an agent context) — don't guess at what it would print.
 
 ```bash
 agentic config get telegram.bot_token
@@ -70,9 +95,10 @@ Notes on using it:
 ```bash
 agentic mcp list
 ```
-Prints every command and subcommand the CLI exposes. Run this first if
-you're unsure a command still exists or want the full current surface area
-— the tool may have grown commands beyond what's documented here.
+Run this through your execute tool first if you're unsure a command still
+exists or want the full current surface area — the tool may have grown
+commands beyond what's documented here. Read the returned stdout to see
+every command and subcommand the CLI exposes.
 
 ### Run the bot server
 
@@ -80,9 +106,10 @@ you're unsure a command still exists or want the full current surface area
 agentic run
 ```
 Launches `bot_app.py` in the foreground and blocks until interrupted
-(Ctrl+C). Only run this in the background (e.g. `agentic run &` or a
-subprocess with output capture) if you need the shell back — otherwise it
-will hang the calling process.
+(Ctrl+C). This is a long-running/blocking command — invoke it through your
+execute tool's **background mode** (or with an explicit timeout) if you
+need the session back; never call it as a plain blocking foreground
+invocation, or it will hang the whole tool call.
 
 ### Send a message
 
@@ -90,7 +117,8 @@ will hang the calling process.
 agentic message add "Hello, this is a test message"
 ```
 Sends TEXT through the bot. Always quote the message text so shell
-word-splitting doesn't break multi-word messages.
+word-splitting doesn't break multi-word messages when passed through the
+execute tool.
 
 ### Adding a new agent (no dedicated `agents add` command exists)
 
@@ -132,9 +160,11 @@ new agent, you go through `config set` against the `agents` array instead:
    ```bash
    agentic config get "agents.[2]"
    ```
-   And remember: `config set` only prints the merged result — confirm
-   separately whether the CLI actually persists to `file`, or whether
-   you need to capture stdout and write it back yourself.
+   Run this through your execute tool right after the write and inspect
+   the returned stdout. And remember: `config set` only prints the merged
+   result — confirm separately whether the CLI actually persists to
+   `file`, or whether you need to capture stdout and write it back
+   yourself.
 
 ### List/read config values
 
@@ -239,9 +269,10 @@ in the agent's Python setup, not here:
 
 ## Using `--help`
 
-Every command and group supports `--help`. Use it liberally instead of
-guessing at flags or relying solely on this document — the CLI's docstrings
-are the source of truth and may have changed since this skill was written.
+Every command and group supports `--help`. Run it through your execute
+tool liberally instead of guessing at flags or relying solely on this
+document — the CLI's docstrings are the source of truth and may have
+changed since this skill was written.
 
 ```bash
 agentic --help
@@ -261,13 +292,15 @@ Reach for `--help` in these situations:
 
 ## Automatic error recovery
 
-When a command run through this skill fails, don't just surface the raw
-error — work through it methodically before asking the user to intervene.
+When a command run through the execute tool fails, don't just surface the
+raw error — work through it methodically before asking the user to
+intervene.
 
-1. **Read the actual error text and exit code**, not just "it failed."
-   Click and this CLI raise distinct, informative errors — capture stderr
-   and stdout separately if possible so you're not mixing usage errors with
-   program output.
+1. **Read the actual error text and exit code returned by the execute
+   tool**, not just "it failed." Click and this CLI raise distinct,
+   informative errors — read stderr and stdout separately from the tool
+   result if possible so you're not mixing usage errors with program
+   output.
 
 2. **Match the error to a likely cause and try one targeted fix**, then
    re-run:
@@ -277,11 +310,11 @@ error — work through it methodically before asking the user to intervene.
    | `Error: No such command` | Typo, or subcommand moved/renamed | `agentic --help` / `agentic <group> --help` to see current command tree |
    | `Error: No such option` / `Got unexpected extra argument` | Wrong flag name or argument order | `agentic <command> --help` to check exact signature, fix and retry |
    | `Error: Missing argument` / `Missing option` | Required arg/option omitted | Check `--help`, supply the missing piece |
-   | `FileNotFoundError` / config file not found | Wrong working directory, or file path/name mismatch | `pwd` and `ls` to locate `agentic.json`; retry with an explicit file path argument |
+   | `FileNotFoundError` / config file not found | Wrong working directory, or file path/name mismatch | Run `pwd`/`ls` (or check the execute tool's cwd parameter) to locate `agentic.json`; retry with an explicit file path argument |
    | `json.JSONDecodeError` | Config file has invalid JSON (trailing comma, wrong quotes, etc.) | Open and inspect the file; if you're the one who last wrote it, check for shell-quoting issues before assuming the file itself is hand-edited garbage |
    | Pydantic validation error from `AgenticConfig` | Config doesn't match expected schema | Run `agentic config schema` and compare field names/types against the file |
    | JSONPath match is empty (command succeeds, no output) | `key_path` doesn't match anything in the config | Run `agentic config get "$"` (or the closest valid root path) to see the whole structure, then correct the path |
-   | Command hangs / doesn't return | You ran `agentic run` (a blocking server) inline | Re-run in the background or in a subprocess with a timeout, don't block the session on it |
+   | Command hangs / doesn't return | You ran `agentic run` (a blocking server) inline | Re-run via your execute tool in background mode or with an explicit timeout, don't block the session on it |
    | `command not found: agentic` | Not installed globally / no active venv | Use `agentic` directly if in PATH, or use full path to executable |
    | `agentic` itself fails to resolve the command | Deps not installed, or wrong project root | Ensure dependencies are installed, confirm you're in the directory with `pyproject.toml`, then retry |
 
@@ -299,6 +332,10 @@ error — work through it methodically before asking the user to intervene.
 
 ## Practical workflow tips
 
+- **Always invoke through the execute tool, never simulate output.**
+  Run every `agentic ...` command via your execute/terminal tool and read
+  its actual returned stdout/stderr/exit code — don't guess or hand-write
+  what the CLI "would" print.
 - **Always `agentic mcp list` when unsure.** It's cheap and gives ground truth on
   available commands instead of relying on this document if the CLI has
   since changed.
@@ -306,11 +343,13 @@ error — work through it methodically before asking the user to intervene.
   trial-and-error when a `config set` call fails validation.
 - **Quote JSONPath expressions with brackets.** Paths like `agents[*].name`
   or `agents.[0].name` contain characters (`[`, `]`, `*`) that some shells
-  will try to glob-expand — wrap them in quotes.
+  will try to glob-expand — wrap them in quotes when passing the command to
+  the execute tool.
 - **Capture stdout, don't parse by eye.** `config get`/`config set`/`config
   schema` all print JSON — pipe to `python -m json.tool`, `jq`, or parse the
-  captured string in your own code rather than eyeballing it.
+  captured string returned by the execute tool in your own code rather than
+  eyeballing it.
 - **Non-zero exit codes signal real failures**, not just warnings — the CLI
   calls `sys.exit(1)` on missing files, JSON decode errors, and missing
-  agents. Check exit status after each call, especially in scripted/agentic
-  chains of commands.
+  agents. Check the exit status returned by the execute tool after each
+  call, especially in scripted/agentic chains of commands.

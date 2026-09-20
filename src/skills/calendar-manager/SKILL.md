@@ -1,5 +1,5 @@
 ---
-name: calendar_manager
+name: calendar-manager
 description: >-
   Use this skill for all calendar management tasks. Trigger it with phrases like: "Schedule a meeting...",
   "Move my event...", or "Show my schedule for [timeframe]". This skill utilizes
