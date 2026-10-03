@@ -166,7 +166,7 @@ Mirrors the existing `workspace/agents/trip_planner/` agent:
   "workspace_dir": "./workspace",
   "name": "weather_reporter",
   "description": "Agent that fetches and summarizes weather forecasts",
-  "model_id": "custom-nemotron-3-super-120b-a12b",
+  "model_id": "custom-nemotron-3-ultra-550b-a55b",
   "tools": [
     { "name": "tavily_search", "require_approval": false, "approval_text": null }
   ],

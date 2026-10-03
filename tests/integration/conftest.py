@@ -67,7 +67,7 @@ def bootstrap_main_agent(denied_tools=None):
               "workspace_dir": "./workspace",
               "name": "main",
               "description": "Main Agent for system",
-              "model_id": "custom-nemotron-3-super-120b-a12b",
+              "model_id": "custom-nemotron-3-ultra-550b-a55b",
               "tools": [],
               "denied_tools": denied_tools,
               "skills": [
@@ -93,8 +93,8 @@ def compose_stack():
             workspace="./workspace",
             models=[
               ModelConfig.model_validate({
-                    "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-                    "model_id": "custom-nemotron-3-super-120b-a12b",
+                    "model": "openai:nvidia/nemotron-3-ultra-550b-a55b",
+                    "model_id": "custom-nemotron-3-ultra-550b-a55b",
                     "context_window": 128000,
                     "base_url": "https://integrate.api.nvidia.com/v1",
                     "api_key": {
@@ -131,6 +131,9 @@ def compose_stack():
     )
     with stack:
         yield stack
+        std_out, std_err = stack.get_logs("bot")
+        logger.info(f"Bot logs:\n{std_out}\n{std_err}")
+
     stack.stop(down=True)
 
 @pytest.fixture(scope="session")
@@ -167,7 +170,7 @@ def reset():
 
 def get_user_agent(user_agent_prompt: str = None):
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-super-120b-a12b",
+        model="openai:nvidia/nemotron-3-ultra-550b-a55b",
         base_url=f"https://integrate.api.nvidia.com/v1",
         api_key=os.environ['NVIDIA_API_KEY']
     )
@@ -187,7 +190,7 @@ Criterias:
 {criterias}
     """
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-super-120b-a12b",
+        model="openai:nvidia/nemotron-3-ultra-550b-a55b",
         base_url=f"https://integrate.api.nvidia.com/v1",
         api_key=os.environ['NVIDIA_API_KEY']
     )

@@ -10,5 +10,5 @@ Feature: Bot webhook health and message delivery
     When I query the bot's health endpoint
     Then the response status is 200
     Then Execute agent bootstrap.yaml
-#    Then Execute agent create-agent.yaml
+    Then Execute agent create-agent.yaml
     Then Execute agent create-skill.yaml

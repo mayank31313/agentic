@@ -184,7 +184,7 @@ def write(agent_name, config_source, instructions_source, file):
 
     Examples:
         agentic agents write weather_reporter --config agent.json --instructions prompt.md
-        agentic agents write weather_reporter --config '{"workspace_dir": "./workspace", "name": "weather_reporter", "description": "...", "model_id": "custom-nemotron-3-super-120b-a12b"}' --instructions "# Weather Reporter\n\nYou are ..."
+        agentic agents write weather_reporter --config '{"workspace_dir": "./workspace", "name": "weather_reporter", "description": "...", "model_id": "custom-nemotron-3-ultra-550b-a55b"}' --instructions "# Weather Reporter\n\nYou are ..."
     """
     try:
         agentic_config = _load_agentic_config(file)

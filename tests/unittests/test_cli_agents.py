@@ -17,8 +17,8 @@ AGENTIC_JSON = {
     "workspace": "./workspace",
     "models": [
         {
-            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-            "model_id": "custom-nemotron-3-super-120b-a12b",
+            "model": "openai:nvidia/nemotron-3-ultra-550b-a55b",
+            "model_id": "custom-nemotron-3-ultra-550b-a55b",
             "context_window": 128000,
             "base_url": "https://integrate.api.nvidia.com/v1",
             "api_key": {"env_key": "NVIDIA_API_KEY"},
@@ -42,7 +42,7 @@ def workspace(tmp_path, monkeypatch):
         "workspace_dir": "./workspace",
         "name": "sample_agent",
         "description": "A sample agent for tests",
-        "model_id": "custom-nemotron-3-super-120b-a12b",
+        "model_id": "custom-nemotron-3-ultra-550b-a55b",
         "tools": [],
         "denied_tools": ["execute_code"],
         "skills": [],
