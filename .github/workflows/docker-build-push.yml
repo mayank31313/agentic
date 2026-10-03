@@ -37,6 +37,16 @@ jobs:
         with:
           version: "0.9.17"
 
+      - name: Build Image for Integration Tests
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+
       - name: Run Integration Tests
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}

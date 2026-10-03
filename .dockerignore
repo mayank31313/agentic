@@ -13,5 +13,8 @@ docker-compose.yaml
 downloads
 images
 credentials
+workspace
+skills
 resources
 .superpowers
+tests

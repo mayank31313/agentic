@@ -1,5 +1,5 @@
 {
-    "workspace": "./workspace",
+    "workspace": "/workspace",
     "mcpServers": {
         "agentic_mcp": {
             "url": "http://mcp:8811/mcp",
@@ -8,8 +8,8 @@
     },
     "models": [
         {
-            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-            "model_id": "custom-nemotron-3-super-120b-a12b",
+            "model": "openai:nvidia/nemotron-3-ultra-550b-a55b",
+            "model_id": "custom-nemotron-3-ultra-550b-a55b",
             "base_url": "https://integrate.api.nvidia.com/v1",
             "api_key": {
                 "env_key": "NVIDIA_API_KEY"
@@ -17,5 +17,19 @@
             "context_window": 128000
         }
     ],
-    "tools": []
+    "tools": [],
+    "vector_store": {
+        "backend": "in_memory",
+        "enabled": true,
+        "collection_name": "agentic_memory",
+        "persist_directory": null,
+        "es_host": "localhost",
+        "es_port": 9200,
+        "embedding": {
+            "provider": "huggingface",
+            "model": "sentence-transformers/all-MiniLM-L6-v2",
+            "base_url": null,
+            "api_key": null
+        }
+    }
 }

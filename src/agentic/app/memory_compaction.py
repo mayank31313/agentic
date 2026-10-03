@@ -16,7 +16,7 @@ def create_memory_compaction_agent():
     Format your summary as a bullet list of key points."""
 
     return create_deep_agent(
-        model="openai:nvidia/nemotron-3-super-120b-a12b",
+        model="openai:nvidia/nemotron-3-ultra-550b-a55b",
         backend=FilesystemBackend(root_dir="../../../workspace", virtual_mode=True),
         system_prompt=memory_compaction_prompt,
     )

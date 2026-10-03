@@ -166,7 +166,7 @@ Mirrors the existing `workspace/agents/trip_planner/` agent:
   "workspace_dir": "./workspace",
   "name": "weather_reporter",
   "description": "Agent that fetches and summarizes weather forecasts",
-  "model_id": "custom-nemotron-3-super-120b-a12b",
+  "model_id": "custom-nemotron-3-ultra-550b-a55b",
   "tools": [
     { "name": "tavily_search", "require_approval": false, "approval_text": null }
   ],
@@ -247,7 +247,7 @@ troubleshooting.
 1. Confirm the skill directory sits under a path already referenced by an
    agent's `skills` config (`./src/skills/` is wired to `/skills/` for the
    `main` agent by default — see
-   [`workspace/agents/main/instructions.md`](https://github.com/mayank31313/agentic/blob/main/workspace/agents/main/instructions.md)).
+   [`/workspace/agents/main/instructions.md`](https://github.com/mayank31313/agentic/blob/main/workspace/agents/main/instructions.md)).
    No extra registration step is needed if you add the skill under
    `src/skills/`; it's picked up automatically the next time the agent
    initializes.

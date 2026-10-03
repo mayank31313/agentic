@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-DEFAULT_SQLITE_RELATIVE_PATH = os.path.join("workspace", "data", "agentic.db")
+DEFAULT_SQLITE_RELATIVE_PATH = os.path.join("alembic", "data", "agentic.db")
 
 _engine: Engine | None = None
 _session_factory: sessionmaker | None = None
