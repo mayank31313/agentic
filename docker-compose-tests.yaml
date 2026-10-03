@@ -1,0 +1,13 @@
+services:
+  bot:
+    env_file:
+      - .env.test
+      - .env.example
+    volumes:
+      - ./tests/resources:/bot/resources:ro
+      - ./tests/workspace:/bot/workspace
+      - ./downloads:/bot/downloads
+  mcp:
+    env_file:
+      - .env.test
+      - .env.example

@@ -1,0 +1,46 @@
+MIT License with Attribution Requirement
+
+Copyright (c) 2026 Mayank Shinde
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+1. Attribution.
+   Any use, distribution, modification, fork, or derivative work of the
+   Software — whether or not the source code is modified, and whether
+   distributed in source or binary form — MUST include clear and visible
+   acknowledgement of the original author, Mayank Shinde, and a reference
+   to the original project ("Agentic",
+   https://github.com/<your-org-or-username>/Agentic or the canonical
+   repository URL). This acknowledgement must appear in at least one of the
+   following locations, as applicable to the type of distribution:
+
+   - The README, "About", "Credits", or "Acknowledgements" section of any
+     derivative or forked project.
+   - The "About"/"Credits" screen or documentation of any application,
+     product, or service that incorporates the Software or a substantial
+     portion of it.
+   - The NOTICE or LICENSE file of any redistributed copy of the Software,
+     preserving this notice and the copyright notice below.
+
+   Removing, obscuring, or failing to provide this attribution is a
+   violation of this license and revokes the permissions granted herein.
+
+2. Copyright Notice.
+   The above copyright notice and this permission notice (including the
+   Attribution clause) shall be included in all copies or substantial
+   portions of the Software.
+
+3. No Warranty.
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

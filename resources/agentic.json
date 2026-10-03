@@ -1,0 +1,46 @@
+{
+    "workspace": "./workspace",
+    "models": [
+        {
+            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
+            "model_id": "custom-nemotron-3-super-120b-a12b",
+            "context_window": 256000,
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "api_key": {
+                "env_key": "NVIDIA_API_KEY"
+            }
+        },
+        {
+            "model": "openai:gemma-4-e2b-it",
+            "model_id": "custom-gemma-4-e2b-it",
+            "context_window": 256000,
+            "base_url": "http://host.docker.internal:8080/v1",
+            "api_key": {
+                "env_key": "NVIDIA_API_KEY"
+            }
+        }
+    ],
+    "tools": [{
+        "name": "tavily_search",
+        "enabled": true,
+        "api_key": {
+            "env_key": "TAVILY_API_KEY"
+        }
+    }],
+    "mcpServers": {
+        "agentic_mcp": {
+            "url": "http://host.docker.internal:8811/mcp",
+            "transport": "http"
+        }
+    },
+    "vector_store": {
+        "backend": "chroma",
+        "enabled": true,
+        "collection_name": "agentic_memory",
+        "persist_directory": "./workspace/vector_store",
+        "embedding": {
+            "provider": "huggingface",
+            "model": "sentence-transformers/all-MiniLM-L6-v2"
+        }
+    }
+}

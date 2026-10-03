@@ -1,0 +1,17 @@
+.github
+.vagrant
+build
+images
+.venv
+docs
+.env
+.env.example
+cron_schedules.json
+docker-compose-langfuse.yaml
+docker-compose-tests.yaml
+docker-compose.yaml
+downloads
+images
+credentials
+resources
+.superpowers

@@ -1,0 +1,94 @@
+[project]
+name = "agentic"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Mayank Shinde", email = "mayank31313@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.13.0",
+    "apscheduler>=3.11.2",
+    "click>=8.4.2",
+    "cndi==2.7.9",
+    "deepagents>=0.6.12",
+    "elasticsearch>=8.0.0",
+    "fastmcp>=3.4.4",
+    "jsonpath-ng>=1.8.0",
+    "langchain-mcp-adapters>=0.3.0",
+    "langchain-nvidia-ai-endpoints>=1.4.3",
+    "langchain-openai>=1.3.3",
+    "langchain-tavily>=0.2.18",
+    "langchain-chroma>=0.2.2",
+    "langchain-huggingface>=0.1.2",
+    "langchain-elasticsearch>=0.3.2",
+    "sentence-transformers>=3.0.0",
+    "mcp[cli]>=1.28.0",
+    "pyyaml>=6.0.3",
+    "pytest-repeat>=0.9.4",
+    "python-telegram-bot>=22.8",
+    "tinydb>=4.8.2",
+    "google-api-python-client>=2.198.0",
+    "google-auth-httplib2>=0.4.0",
+    "google-auth-oauthlib>=1.4.0",
+    "proxmoxer>=2.3.0",
+    "sqlalchemy>=2.0.51",
+    "transformers>=5.14.1",
+    "torch>=2.13.0",
+    "soundfile>=0.14.0",
+    "sentencepiece>=0.2.2",
+    "huggingface-hub>=0.0.1",
+    "fastapi>=0.141.1",
+    "python-dotenv>=0.9.9",
+    "jinja2>=3.1.6",
+    "pypdf>=6.15.0",
+    "langfuse>=4.14.5",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+agentic = "agentic:main"
+
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12.0"]
+build-backend = "uv_build"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests/integration"]
+env_files=[".env"]
+markers = [
+    "docker: integration tests that require a running Docker daemon and docker compose",
+    "behaviour: BDD-style scenarios verifying end-to-end agent behaviour (may call a real/judge LLM)",
+]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+[dependency-groups]
+test = [
+    "mcp-agent-test>=0.1.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-bdd>=8.1.0",
+    "pytest-mock>=3.15.1",
+    "testcontainers>=4.15.0",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.9",
+]
