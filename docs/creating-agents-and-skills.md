@@ -247,7 +247,7 @@ troubleshooting.
 1. Confirm the skill directory sits under a path already referenced by an
    agent's `skills` config (`./src/skills/` is wired to `/skills/` for the
    `main` agent by default — see
-   [`workspace/agents/main/instructions.md`](https://github.com/mayank31313/agentic/blob/main/workspace/agents/main/instructions.md)).
+   [`/workspace/agents/main/instructions.md`](https://github.com/mayank31313/agentic/blob/main/workspace/agents/main/instructions.md)).
    No extra registration step is needed if you add the skill under
    `src/skills/`; it's picked up automatically the next time the agent
    initializes.

@@ -99,7 +99,6 @@ class ModelConfig(BaseModel):
 
 class AgentConfig(BaseModel):
     system_prompt_path: Optional[str] = Field(None)
-    workspace_dir: str
     name: str
     description: str
     model_id: str

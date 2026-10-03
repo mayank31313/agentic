@@ -30,6 +30,7 @@ Don't rush this. Don't dump the whole questionnaire in one message. Ask naturall
 - What kind of vibe do you want — witty and casual, dry and to-the-point, warm and encouraging, something else?
 - Any lines I should never cross, or things you specifically don't want me to do unprompted?
 
+
 ### 3. Initial setup
 - Is there anything you want set up right away — recurring checks (email, calendar, weather), a heartbeat schedule, specific tools or integrations you plan to use?
 - Are there other people who might talk to me (group chats, shared channels), or is it just the two of us for now?
@@ -62,7 +63,7 @@ Merge these into the existing `AGENTS.md` — don't overwrite the operational se
 
 ## Updating your system prompt
 
-Writing to `AGENTS.md` is not enough on its own — that file is workspace *context*, but your actual system prompt is the Markdown body of `workspace/agents/main/instructions.md`, and it's only changed safely through the `agentic-cli` skill, never by hand-editing the file directly. Once `AGENTS.md` is updated and confirmed:
+Writing to `AGENTS.md` is not enough on its own — that file is workspace *context*, but your actual system prompt is the Markdown body of `/workspace/agents/main/instructions.md`, and it's only changed safely through the `agentic-cli` skill, never by hand-editing the file directly. Once `AGENTS.md` is updated and confirmed:
 
 1. Run `agentic agents show main` to print your **current** JSON config header and instructions body exactly as stored — you need this because updates replace the whole body, not a diff.
 2. Take that current instructions body and fold in your new identity: your name, vibe, and how you should refer to yourself and the user — keep everything else in the body (memory rules, red lines, protocols, heartbeat behavior, etc.) intact.
@@ -72,12 +73,12 @@ Writing to `AGENTS.md` is not enough on its own — that file is workspace *cont
    ```
    Only pass `--config` too if a setting like `model_id` or `tools` genuinely needs to change — don't touch it just because you're touching `--instructions`.
 4. Run `agentic agents validate main` afterward to confirm the update landed cleanly (correct directory/name match, valid `model_id`, non-blank instructions).
-5. If either command fails, **do not** hand-edit `workspace/agents/main/instructions.md` as a workaround — re-read the error, fix the `--config`/`--instructions` payload, and retry through the CLI.
+5. If either command fails, **do not** hand-edit `/workspace/agents/main/instructions.md` as a workaround — re-read the error, fix the `--config`/`--instructions` payload, and retry through the CLI.
 
 ## When you're done
 
 - `AGENTS.md` reads like it was written by (and about) someone specific, not a generic template.
-- `workspace/agents/main/instructions.md`'s system prompt has been updated via `agentic agents update main` and passes `agentic agents validate main`.
+- `/workspace/agents/main/instructions.md`'s system prompt has been updated via `agentic agents update main` and passes `agentic agents validate main`.
 - The user has confirmed it looks right.
 - `BOOTSTRAP.md` no longer exists.
 - Confirm the user clearly that bootstrap process is completed and you don't have any further questions left.

@@ -9,6 +9,7 @@ from cndi.annotations import Bean
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend
 from deepagents.backends.filesystem import FilesystemBackend
+from deepagents.middleware import SkillsMiddleware
 from huggingface_hub import hf_hub_download
 from langchain.agents.middleware import InterruptOnConfig
 from langchain.chat_models import init_chat_model
@@ -143,8 +144,6 @@ def get_main_agent(
     )
 
     routes = {
-        f"/images/": FilesystemBackend(root_dir="./images", virtual_mode=True),
-        f"/workspace": FilesystemBackend(root_dir="./workspace", virtual_mode=True),
         f"/resources/": FilesystemBackend(root_dir="./resources", virtual_mode=True),
     }
     agent_skill_paths = []
@@ -161,11 +160,10 @@ def get_main_agent(
     #     logger.info(f"Mounting AgenticShellBackend at /shell/ for agent {agent_config.name}")
     #     routes["/shell/"] = AgenticShellBackend(root_dir="./workspace", virtual_mode=True)
     #     interrupt_tool_on.update(SHELL_BACKEND_INTERRUPT_ON)
-
     agent = create_deep_agent(
         model=model,
         backend=CompositeBackend(
-            default=AgenticShellBackend(root_dir="./workspace", virtual_mode=True),
+            default=AgenticShellBackend(root_dir="/workspace", virtual_mode=True),
             routes=routes,
         ),
         skills=agent_skill_paths,

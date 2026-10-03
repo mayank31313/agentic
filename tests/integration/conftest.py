@@ -26,7 +26,7 @@ MCP_FIXTURE_PATH = "tests/integration/mcp_fixtures/main.yaml"
 
 AGENTIC_ORIGINAL_WORKSPACE_PATH = Path.cwd() / "workspace"
 
-AGENTIC_CONFIG_JSON = "tests/resources/agentic_test.json"
+AGENTIC_CONFIG_JSON = "tests/resources/agentic.json"
 AGENTIC_WORKSPACE_PATH = "tests/workspace"
 BOOTSTRAP_CONFIG_PATH = "tests/resources/BOOTSTRAP.md"
 
@@ -64,7 +64,6 @@ def bootstrap_main_agent(denied_tools=None):
 
     with open(os.path.join(agent_instructions_path, "instructions.md"), "w") as f:
         agent_config = AgentConfig.model_validate({
-              "workspace_dir": "./workspace",
               "name": "main",
               "description": "Main Agent for system",
               "model_id": "custom-nemotron-3-ultra-550b-a55b",
@@ -72,7 +71,7 @@ def bootstrap_main_agent(denied_tools=None):
               "denied_tools": denied_tools,
               "skills": [
                 {
-                  "path": "./src/skills/",
+                  "path": "/skills/",
                   "virtual_path": "/skills/"
                 }
               ]
@@ -90,7 +89,7 @@ def compose_stack():
               ])
     with open(AGENTIC_CONFIG_JSON, "w") as config_file:
         agentic_config = AgenticConfig(
-            workspace="./workspace",
+            workspace=os.getenv("WORKSPACE_PATH") or "/workspace",
             models=[
               ModelConfig.model_validate({
                     "model": "openai:nvidia/nemotron-3-ultra-550b-a55b",
