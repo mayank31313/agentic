@@ -66,7 +66,7 @@ def bootstrap_main_agent(denied_tools=None):
         agent_config = AgentConfig.model_validate({
               "name": "main",
               "description": "Main Agent for system",
-              "model_id": "custom-nemotron-3-ultra-550b-a55b",
+              "model_id": "custom-gemma-4-e2b-it",
               "tools": [],
               "denied_tools": denied_tools,
               "skills": [
@@ -91,24 +91,24 @@ def compose_stack():
         agentic_config = AgenticConfig(
             workspace=os.getenv("WORKSPACE_PATH") or "/workspace",
             models=[
-              ModelConfig.model_validate({
-                    "model": "openai:nvidia/nemotron-3-ultra-550b-a55b",
-                    "model_id": "custom-nemotron-3-ultra-550b-a55b",
+                ModelConfig.model_validate({
+                    "model": "openai:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+                    "model_id": "custom-nemotron-3-nano-omni-30b-a3b-reasoning",
                     "context_window": 128000,
                     "base_url": "https://integrate.api.nvidia.com/v1",
                     "api_key": {
                         "env_key": "NVIDIA_API_KEY"
                     }
-              }),
-            # ModelConfig.model_validate({
-                # "model": "openai:gemma-4-e2b-it",
-                # "model_id": "custom-gemma-4-e2b-it",
-                # "context_window": 256000,
-                # "base_url": "http://host.docker.internal:8080/v1",
-                # "api_key": {
-                #     "env_key": "NVIDIA_API_KEY"
-                # }
-            # })
+                }),
+                ModelConfig.model_validate({
+                    "model": "openai:gemma-4-e2b-it",
+                    "model_id": "custom-gemma-4-e2b-it",
+                    "context_window": 256000,
+                    "base_url": "http://host.docker.internal:8080/v1",
+                    "api_key": {
+                        "env_key": "NVIDIA_API_KEY"
+                    }
+                })
             ],
             mcpServers={
                 "agentic_mcp": {
@@ -169,7 +169,7 @@ def reset():
 
 def get_user_agent(user_agent_prompt: str = None):
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-ultra-550b-a55b",
+        model="openai:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         base_url=f"https://integrate.api.nvidia.com/v1",
         api_key=os.environ['NVIDIA_API_KEY']
     )
@@ -189,7 +189,7 @@ Criterias:
 {criterias}
     """
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-ultra-550b-a55b",
+        model="openai:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         base_url=f"https://integrate.api.nvidia.com/v1",
         api_key=os.environ['NVIDIA_API_KEY']
     )
