@@ -9,7 +9,6 @@ from cndi.annotations import Bean
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend
 from deepagents.backends.filesystem import FilesystemBackend
-from deepagents.middleware import SkillsMiddleware
 from huggingface_hub import hf_hub_download
 from langchain.agents.middleware import InterruptOnConfig
 from langchain.chat_models import init_chat_model
@@ -55,18 +54,7 @@ def read_agents_md(path: str) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
-def get_image_agent():
-    # usage
-    client = ChatOpenAI(
-        model="gemma-4-e2b-it",
-        base_url="http://localhost:8080/v1",
-        api_key=os.getenv("OPENAI_API_KEY", "$NVIDIA_API_KEY"),
-        temperature=0.6,
-        top_p=0.95,
-        max_tokens=65536,
-    )
 
-    return client
 
 
 logger = logging.getLogger(__name__)

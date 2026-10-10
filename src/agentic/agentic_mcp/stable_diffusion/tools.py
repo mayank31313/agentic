@@ -9,10 +9,10 @@ from cndi.annotations import Component
 from cndi.env import getContextEnvironment
 from fastmcp.tools import ToolResult, tool
 from httpx import ConnectError
+from langchain_openai import ChatOpenAI
 from mcp.types import TextContent
 from pydantic import BaseModel, Field
 
-from agentic.app.agents import get_image_agent
 from agentic.app.constants import (
     EXTERNAL_API_LOCALAI_BASE_URL_PROP,
     EXTERNAL_API_LOCALAI_DEFAULT_IMAGE_MODEL_PROP,
@@ -264,7 +264,18 @@ class ImageAnalysisResult(BaseModel):
         "wrong pose, artifacts, wrong style, etc.), not generic commentary."
     )
 
+def get_image_agent():
+    # usage
+    client = ChatOpenAI(
+        model="gemma-4-e2b-it",
+        base_url="http://localhost:8080/v1",
+        api_key=os.getenv("OPENAI_API_KEY", "$NVIDIA_API_KEY"),
+        temperature=0.6,
+        top_p=0.95,
+        max_tokens=65536,
+    )
 
+    return client
 def analyse_image(image_generation_request: ImageGenerationRequest, image_url):
     image_agent = get_image_agent().with_structured_output(ImageAnalysisResult)
 
