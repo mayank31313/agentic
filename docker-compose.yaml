@@ -31,11 +31,6 @@ services:
     depends_on:
       mcp:
         condition: service_healthy
-    volumes:
-      - ./src:/bot/src:ro
-      - ./resources:/bot/resources:ro
-      - ./workspace:/bot/workspace
-      - ./downloads:/bot/downloads
     deploy:
       resources:
         limits:
