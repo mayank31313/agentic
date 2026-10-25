@@ -96,6 +96,11 @@ class ModelConfig(BaseModel):
     )
     context_window: int = Field(default=128000)
 
+class RateLimitConfig(BaseModel):
+    max_requests_per_second: int = Field(
+        default=60, description="Maximum requests per second"
+    )
+    enabled: bool = Field(default=False, description="Whether rate limiting is enabled")
 
 class AgentConfig(BaseModel):
     system_prompt_path: Optional[str] = Field(None)
@@ -109,6 +114,7 @@ class AgentConfig(BaseModel):
     )
     agent_model_config: Optional[ModelConfig] = Field(None, description="Agent model config")
     instructions: Optional[str] = Field(default=None)
+    rate_limiter: RateLimitConfig = Field(default_factory=RateLimitConfig, description="Rate limiting configuration for the agent")
     enable_shell_backend: bool = Field(
         default=False,
         description=(

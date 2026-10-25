@@ -12,6 +12,7 @@ from deepagents.backends.filesystem import FilesystemBackend
 from huggingface_hub import hf_hub_download
 from langchain.agents.middleware import InterruptOnConfig
 from langchain.chat_models import init_chat_model
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
@@ -144,10 +145,18 @@ def get_main_agent(
         )
         agent_skill_paths.append(skill_config.virtual_path)
 
-    # if agent_config.enable_shell_backend:
-    #     logger.info(f"Mounting AgenticShellBackend at /shell/ for agent {agent_config.name}")
-    #     routes["/shell/"] = AgenticShellBackend(root_dir="./workspace", virtual_mode=True)
-    #     interrupt_tool_on.update(SHELL_BACKEND_INTERRUPT_ON)
+    if agent_config.rate_limiter.enabled:
+        rate_limiter = InMemoryRateLimiter(
+            requests_per_second=agent_config.rate_limiter.max_requests_per_second,
+            check_every_n_seconds=0.1,  # Check every 100ms whether allowed to make a request
+            max_bucket_size=10,  # Controls the maximum burst size
+        )
+
+        logger.info(
+            f"Rate limiting enabled: {agent_config.rate_limiter.max_requests_per_second} requests per second"
+        )
+        middlewares.append(rate_limiter)
+
     agent = create_deep_agent(
         model=model,
         backend=CompositeBackend(
