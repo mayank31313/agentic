@@ -73,7 +73,7 @@ adding agents and skills see [Creating agents and skills](creating-agents-and-sk
 | `__init__.py` | Shared types: `InterruptEvent`, `MessageAction`, `MessageType`. | Adding a shared message or event type. |
 | `tools.py` | `ToolsRegistry` (aggregates and refreshes LangChain, MCP, sub-agent and custom tools), `agent_as_tool`, `register_workspace_sub_agents`, `set_common_tools`, shell and CLI helpers (`agentic_run_agentic_cli` allowlist), `get_date_time`. | Adding a built-in tool or changing how tools are registered. |
 | `custom_tools.py` | Framework for agent-authored tools stored in `workspace/custom_tools/<name>/`: source validation, arg models, sandboxed loading, approval flow. | Changing custom-tool validation or lifecycle. |
-| `backends.py` | `AgenticShellBackend` (filesystem + local shell). Opt-in per agent with `enable_shell_backend`; `execute` always needs human approval. | Adding or hardening a deepagents backend. |
+| `backends.py` | `AgenticShellBackend` (filesystem + local shell) for workspace sub-agents. Sub-agents can opt in with `enable_shell_backend`; in this path, `execute` always needs human approval. The main agent's shell backend is wired separately and is not covered by these guarantees. | Adding or hardening a deepagents backend. |
 | `middleware.py` | `ToolNotifierMiddleware`: notifies the channel before and after tool calls. | Changing tool-event notifications or adding middleware. |
 | `memory.py` | `Memory`: stores conversation messages and bridges to `MemoryRetriever`. | Changing conversation storage. |
 | `audio.py` | Voice support: ogg→mp3 conversion via `ffmpeg`, speech-to-text and text-to-speech beans. | Changing audio handling. |
@@ -85,7 +85,7 @@ adding agents and skills see [Creating agents and skills](creating-agents-and-sk
 | File | Purpose | Change it when… |
 |---|---|---|
 | `__init__.py` | Package marker. | Rarely. |
-| `engine.py` | Engine and session factory. DB path is `workspace/data/agentic.db`, overridable via `AGENTIC_SQLITE_PATH`. | Changing DB location or connection settings. |
+| `engine.py` | Engine and session factory. DB path defaults to `alembic/data/agentic.db` relative to the working directory, overridable via `AGENTIC_SQLITE_PATH`. | Changing DB location or connection settings. |
 | `models.py` | SQLAlchemy `Base` and the generic key/value `DataRecord` model. Every schema change needs an Alembic migration. | Adding a table or column. |
 | `schemas.py` | Pydantic schemas `DataRecordCreate`, `DataRecordUpdate`, `DataRecordRead`. | Changing the validated shape of records. |
 | `repository.py` | CRUD functions plus `RecordNotFoundError` and `RecordAlreadyExistsError`. Keeps persistence out of tool code. | Adding queries or persistence rules. |
@@ -96,7 +96,7 @@ adding agents and skills see [Creating agents and skills](creating-agents-and-sk
 | File | Purpose | Change it when… |
 |---|---|---|
 | `__init__.py` | Package marker. | Rarely. |
-| `server.py` | `get_adapter_gateway()`: FastAPI app factory with the WebSocket endpoint `/ws/{chat_id}`, webhook routes and the `/tools/reload` endpoint. | Adding HTTP or WebSocket endpoints. |
+| `server.py` | `get_adapter_gateway()`: FastAPI app factory with the WebSocket endpoint `/ws/{chat_id}`, webhook routes and the `/admin/tools/reload` endpoint. | Adding HTTP or WebSocket endpoints. |
 | `config.py` | `Gateway` component: routes `InboundMessage`s to the bot and delivers `OutboundMessage`s through adapters. | Changing routing between channels and the bot. |
 | `client.py` | `BotClient`: placeholder client returning mock responses. | Replacing the stub with a real client. |
 | `adapters/__init__.py` | Channel contract: `InboundMessage`, `OutboundMessage`, `OutboundMessageReply`, abstract `ChannelAdapter`, and `AdapterRegistry`. | Changing the adapter interface. |
@@ -128,12 +128,12 @@ module (some only when their environment variables are set) and runs it over HTT
 | File | Purpose | Tools / requirements |
 |---|---|---|
 | `__init__.py` | MCP server bootstrap and tool registration. | Edit to register a new tool module. |
-| `gmail/tools.py` | Gmail integration. | `get_emails`, `get_email`, `download_attachment`, `send_email`. Needs `GOOGLE_CREDENTIALS_FILE`. |
-| `gcalendar/tools.py` | Google Calendar integration. | `plan_today`, `create_event`, `update_event`, `delete_event`, `list_events`. Needs `GOOGLE_CREDENTIALS_FILE`. |
+| `gmail/tools.py` | Gmail integration. | `search_gmail_messages`, `get_message_from_message_id`, `list_gmail_attachments`, `download_gmail_attachment`. Needs `GOOGLE_CREDENTIALS_FILE`. |
+| `gcalendar/tools.py` | Google Calendar integration. | `list_calendar_events`, `get_todays_schedule`, `create_calendar_event`, `update_calendar_event`, `delete_calendar_event`. Needs `GOOGLE_CREDENTIALS_FILE`. |
 | `openweather/tools.py` | Weather. | `get_current_weather`, `get_weather_forecast`. Needs `OPEN_WEATHER_API_KEY`. |
-| `pdf_parser/tools.py` | PDF utilities. | `pdf_parser`, `extract_text_by_page`, `extract_images_by_page`, `merge_pdfs`. |
+| `pdf_parser/tools.py` | PDF utilities. | `pdf_parser`, `extract_pdf_text`, `extract_pdf_metadata`, `extract_pdf_text_from_url`. |
 | `sqlite_store/tools.py` | CRUD over the SQLite data store (via `app/db/repository.py`). | `sqlite_create_record`, `sqlite_get_record`, `sqlite_update_record`, `sqlite_delete_record`, `sqlite_list_records`. |
-| `stable_diffusion/tools.py` | Image generation and editing. | `generate_image`, `edit_image`, `fix_defects_with_ai`. |
+| `stable_diffusion/tools.py` | Image generation. | `generate_image`. |
 | `proxmox/tools.py` | Proxmox VE management (`get_proxmox_tools()`). | Needs `PROXMOX_HOST`, `PROXMOX_USER`, `PROXMOX_TOKEN_NAME`, `PROXMOX_TOKEN_VALUE`. Verify it is registered in `__init__.py` before relying on it. |
 | `*/__init__.py` | Package markers. | — |
 
@@ -160,7 +160,7 @@ Commands are Click groups attached in `src/agentic/__init__.py`. See the
 | `config.py` | `agentic config get/set`: reads and writes `agentic.json` by JSONPath. | Changing config editing. |
 | `mcp.py` | `agentic mcp run`: starts the MCP server (loads `.env`, runs `agentic_mcp.main`). | Changing MCP launch options. |
 | `message.py` | `agentic message add`: send-message command (currently a placeholder). | Implementing message sending. |
-| `tools.py` | `agentic tools reload`: calls the gateway `/tools/reload` endpoint. | Changing tool management commands. |
+| `tools.py` | `agentic tools reload`: calls the gateway `/admin/tools/reload` endpoint. | Changing tool management commands. |
 
 ## `src/agentic/websocket_client/`
 
@@ -174,7 +174,7 @@ Commands are Click groups attached in `src/agentic/__init__.py`. See the
 | Path | Purpose |
 |---|---|
 | `skills/` | Skills the agent loads automatically. Each has a `SKILL.md` (some `SKILLS.md`) and optional scripts: `agentic-cli`, `calendar-manager`, `create-agent`, `deep-agents-skill-creator`, `trip_planner`, `user-profile-manager`. |
-| `workspace/` | Runtime workspace mounted into agents. `AGENTS.md`, `IDENTITY.md`, `SOUL.md`, `USER.md`, `MEMORY.md`, `SUMMARY.md` are persona and memory files; `agents/<name>/instructions.md` defines each agent (`main`, `memory_compactor`, `trip_planner`, …); `custom_tools/`, `data/` (SQLite DB), `memory/` (daily logs) and `vector_store/` hold runtime state. |
+| `workspace/` | Runtime workspace mounted into agents. `AGENTS.md`, `IDENTITY.md`, `SOUL.md`, `USER.md`, `MEMORY.md`, `SUMMARY.md` are persona and memory files; `agents/<name>/instructions.md` defines each agent (`main`, `memory_compactor`, `trip_planner`, …); `custom_tools/`, `memory/` (daily logs) and `vector_store/` hold runtime state. |
 | `resources/agentic.json` | Models, agents, skills, tool permissions and `mcpServers`. |
 | `resources/application.yml` | Runtime config: secrets provider (`env://VAR_NAME`), channels, Telegram token. |
 | `alembic/` | `env.py` (imports `Base` from `app/db/models.py`), `script.py.mako`, and `versions/` (e.g. `0001_create_data_records.py`). |
@@ -220,5 +220,4 @@ Update this page in the same PR whenever you:
 - change the top-level layout (new top-level folder, moved config or skills directory).
 
 Reviewers should block structural PRs that leave this page out of date.
-
 

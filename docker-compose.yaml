@@ -33,7 +33,7 @@ services:
       mcp:
         condition: service_healthy
     volumes:
-      - ./resources:/bot/resources:ro
+      - ./resources:/bot/resources
       - ./workspace:/bot/workspace
       - ./workspace:/workspace
       - ./skills:/skills
