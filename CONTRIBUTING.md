@@ -29,7 +29,7 @@ You don't have to write code to contribute:
 - **Bug reports** — clear, reproducible issues help a lot.
 - **Feature requests / ideas** — open a discussion or issue describing the use case.
 - **Documentation** — improve the README, `architecture.md`, or add examples.
-- **New skills** — add a `SKILL.md` under `src/skills/` (see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md)).
+- **New skills** — add a `SKILL.md` under `skills/` (see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md)).
 - **New agents** — add a `workspace/agents/<name>/instructions.md` and register it in `resources/agentic.json` (see [`docs/creating-agents-and-skills.md`](docs/creating-agents-and-skills.md)).
 - **New MCP tool servers / integrations** — e.g. a new service under `src/agentic/agentic_mcp/`.
 - **New channel adapters** — e.g. Slack/Discord alongside the existing Telegram adapter.
@@ -78,7 +78,7 @@ Never commit `.env` or real secret values.
 2. **Make your changes**, keeping commits focused and logically scoped.
 3. **Add/update tests** under `tests/` for any behavior change.
 4. **Run lint and tests** locally before pushing (see [Testing](#testing)).
-5. **Update documentation** (README, `architecture.md`, docstrings) if your change affects usage, configuration, or architecture.
+5. **Update documentation** (README, `architecture.md`, docstrings) if your change affects usage, configuration, or architecture. If you add, move, rename, or delete any file under `src/` (or change a module's responsibility), also update [`docs/project-structure.md`](docs/project-structure.md) in the same PR.
 6. **Push your branch** and open a pull request against `main`.
 
 ## Coding guidelines
@@ -133,7 +133,14 @@ uv sync --only-group docs
 uv run --no-sync mkdocs serve
 ```
 
-Then open http://127.0.0.1:8000/. Internal planning notes under
+Then open http://127.0.0.1:8000/.
+
+**Keep the structure guide current.** [`docs/project-structure.md`](docs/project-structure.md)
+documents every file under `src/`. Any PR that adds, moves, renames, or deletes a file under
+`src/` - or changes a module's responsibility, MCP tool, channel adapter, CLI command, or Alembic
+migration - must update that page. Reviewers should check this before approving.
+
+Internal planning notes under
 `docs/superpowers/` are intentionally excluded from the published site
 (`exclude_docs` in `mkdocs.yml`) — don't add new user-facing pages there.
 

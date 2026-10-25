@@ -31,6 +31,10 @@ services:
     depends_on:
       mcp:
         condition: service_healthy
+    volumes:
+      - ./resources:/bot/resources:ro
+      - ./workspace:/workspace
+      - ./skills:/skills
     deploy:
       resources:
         limits:

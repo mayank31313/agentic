@@ -51,7 +51,8 @@ Most "chatbot" demos stop at request/response. Agentic is meant to behave like a
    [FastAPI/WebSocket Gateway]
 ```
 
-See [`architecture.md`](docs/architecture.md) for the conceptual component/data-flow breakdown.
+See [`architecture.md`](docs/architecture.md) for the conceptual component/data-flow breakdown,
+and [`project-structure.md`](docs/project-structure.md) for a file-by-file guide to the codebase.
 
 ### Project layout
 
