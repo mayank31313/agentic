@@ -11,7 +11,7 @@
             }
         },
         {
-            "model": "openai:gemma-4-e2b-it",
+            "model": "openai:gemma-4-e2b-it-qat-mtp",
             "model_id": "custom-gemma-4-e2b-it",
             "context_window": 256000,
             "base_url": "http://host.docker.internal:8080/v1",

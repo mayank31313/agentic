@@ -10,8 +10,26 @@ agent) when working in this repository. Follow them in addition to
 `uv` for packaging, `deepagents`/LangChain, MCP tool servers, APScheduler,
 FastAPI/WebSocket gateway, Telegram channel). Key source lives under
 `src/agentic/` (`app/`, `agentic_mcp/`, `cli/`, `websocket_client/`), skills
-under `src/skills/`, and runtime wiring in `resources/agentic.json` /
+under `skills/`, and runtime wiring in `resources/agentic.json` /
 `resources/application.yml`. Tests live under `tests/` and use `pytest`.
+
+## Code generation guidelines
+
+When writing or modifying code (Chat, edits, coding agent), Copilot should:
+
+1. **Consult the structure doc first.** Read
+   [`docs/project-structure.md`](../docs/project-structure.md) to find where a
+   change belongs (its "Where do I change X?" table) before adding new files.
+2. **Update the structure doc in the same change.** If you add, move, rename,
+   or delete a file under `src/`, or change a module's responsibility, MCP
+   tool, channel adapter, CLI command, or Alembic migration, edit the matching
+   table row(s) in `docs/project-structure.md` (add a row for new files, remove
+   rows for deleted files, update paths for renames). Do this as part of the
+   task, not as a follow-up.
+3. **Update related docs** (`README.md`, `architecture.md`, `docs/cli.md`) when
+   usage, configuration, or architecture changes.
+4. Mention the structure-doc update in the commit/PR summary (use a `docs:`
+   commit if it is a standalone change).
 
 ## Code review guidelines
 
@@ -56,7 +74,13 @@ When reviewing pull requests or diffs, Copilot should:
 7. **Docs.** If a change affects usage, configuration, or architecture,
    confirm `README.md`, `architecture.md`, or relevant docstrings/skills are
    updated alongside the code.
-8. **Be constructive, not just critical.** For every issue raised, propose a
+8. **Project structure doc.** [`docs/project-structure.md`](../docs/project-structure.md)
+   describes every file under `src/`. Flag any PR that adds, moves, renames,
+   or deletes a file under `src/` (or changes a module's responsibility, MCP
+   tool, channel adapter, CLI command, or Alembic migration) without updating
+   that page, and suggest the exact table row(s) to add or change. Use a
+   `docs:` commit/PR type for pure structure-doc updates.
+9. **Be constructive, not just critical.** For every issue raised, propose a
    concrete fix or alternative snippet, not just "this is wrong." Prioritize
    feedback by severity (blocking bug/security issue vs. nit/style).
 
@@ -128,4 +152,3 @@ When Copilot leaves an automated review comment, it should:
 2. Explain the concrete risk/impact.
 3. Suggest an actionable fix, ideally as a code suggestion or corrected
    commit/PR text.
-

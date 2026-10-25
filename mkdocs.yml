@@ -16,6 +16,8 @@ exclude_docs: |
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - Project structure: project-structure.md
+
   - Creating agents and skills: creating-agents-and-skills.md
   - CLI reference: cli.md
   - Contributing: https://github.com/mayank31313/agentic/blob/main/CONTRIBUTING.md

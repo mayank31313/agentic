@@ -19,8 +19,10 @@ setup and usage instructions see the [Home](index.md) page; for contribution gui
    [FastAPI/WebSocket Gateway]
 ```
 
-- **Channel Adapter** (`src/agentic/app/channels/`): receives/sends messages for a given chat
-  surface (currently Telegram) and forwards them to the core agent engine.
+For a file-by-file description of the codebase see [Project structure](project-structure.md).
+
+- **Channel Adapter** (`src/agentic/app/gateway/adapters/`): receives/sends messages for a given chat
+  surface (currently Telegram and WebSocket) and forwards them to the core agent engine.
 - **Core AI Agent Engine** (`src/agentic/app/`): built on `deepagents`/LangChain, resolves the
   configured model(s), skills, and tool permissions for each agent defined in
   `resources/agentic.json`, and drives the request/response and tool-call loop.
@@ -37,7 +39,7 @@ setup and usage instructions see the [Home](index.md) page; for contribution gui
   `sqlite_store` MCP tools) give the assistant durable, long-term context across sessions.
 - **Scheduler** (`src/agentic/app/scheduler/`): an APScheduler-backed cron subsystem that reads
   `cron_schedules.json` and runs background sub-agent jobs (e.g. hourly memory compaction).
-- **Skills** (`src/skills/`): Markdown-defined behaviors (a `SKILL.md` plus optional helper
+- **Skills** (`skills/`): Markdown-defined behaviors (a `SKILL.md` plus optional helper
   scripts) that the agent's skills middleware loads automatically to extend capabilities without
   changing core code.
   See [`docs/creating-agents-and-skills.md`](creating-agents-and-skills.md) for how to add a
@@ -51,10 +53,9 @@ setup and usage instructions see the [Home](index.md) page; for contribution gui
 ```
 src/
   agentic/
-    app/              # Bot core: agents, config, channels, gateway, scheduler, memory
-      channels/       # Telegram (and future) channel adapters
+    app/              # Bot core: agents, config, gateway, scheduler, memory
       common/          # Shared tools/backends/middleware wired into every agent
-      gateway/        # FastAPI + WebSocket adapter for external clients
+      gateway/        # FastAPI + WebSocket gateway; adapters/ holds Telegram + WebSocket channels
       scheduler/      # Cron-based scheduling of background sub-agent tasks
       db/             # SQLAlchemy models/engine/repository for the SQLite data store
     agentic_mcp/       # MCP tool servers
