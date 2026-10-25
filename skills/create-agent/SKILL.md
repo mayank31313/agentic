@@ -268,8 +268,8 @@ either:
 ## Reference
 
 Full write-up with worked examples:
-[`docs/creating-agents-and-skills.md`](../../../docs/creating-agents-and-skills.md)
+[`docs/creating-agents-and-skills.md`](../../docs/creating-agents-and-skills.md)
 (project root). Existing agents to model new ones after:
-`workspace/agents/main/instructions.md` and
+`/workspace/agents/main/instructions.md` and
 `workspace/agents/trip_planner/instructions.md`.
 

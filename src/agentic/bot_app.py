@@ -50,7 +50,7 @@ def getAgenticConfig() -> AgenticConfig:
         # NOTE: agent definitions are no longer embedded in this default
         # config. Runtime agents live under `<workspace>/agents/<name>/
         # instructions.md` (see `AgenticConfig.get_agent`/`list_agents`),
-        # e.g. `workspace/agents/main/instructions.md` for the default
+        # e.g. `/workspace/agents/main/instructions.md` for the default
         # "main" agent.
         agentic = AgenticConfig(
             workspace="./workspace",

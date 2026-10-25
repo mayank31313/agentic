@@ -19,16 +19,8 @@ from websockets.sync.client import connect
 
 from agentic import AgenticConfig
 from agentic.app.config import ModelConfig, AgentConfig
-
-CRON_SCHEDULE_FILENAME = "tests/resources/cron_schedules.json"
-AGENTIC_CONFIG_FILENAME = "tests/resources/agentic.json"
-MCP_FIXTURE_PATH = "tests/integration/mcp_fixtures/main.yaml"
-
-AGENTIC_ORIGINAL_WORKSPACE_PATH = Path.cwd() / "workspace"
-
-AGENTIC_CONFIG_JSON = "tests/resources/agentic_test.json"
-AGENTIC_WORKSPACE_PATH = "tests/workspace"
-BOOTSTRAP_CONFIG_PATH = "tests/resources/BOOTSTRAP.md"
+from tests.integration.consts import AGENTIC_WORKSPACE_PATH, BOOTSTRAP_CONFIG_PATH, MAIN_MODEL_ID, AGENTIC_CONFIG_JSON, \
+    MCP_FIXTURE_PATH, CRON_SCHEDULE_FILENAME, JUDGE_MODEL, MAIN_AGENT_MODEL, JUDGE_MODEL_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +56,14 @@ def bootstrap_main_agent(denied_tools=None):
 
     with open(os.path.join(agent_instructions_path, "instructions.md"), "w") as f:
         agent_config = AgentConfig.model_validate({
-              "workspace_dir": "./workspace",
               "name": "main",
               "description": "Main Agent for system",
-              "model_id": "custom-nemotron-3-super-120b-a12b",
+              "model_id": MAIN_MODEL_ID,
               "tools": [],
               "denied_tools": denied_tools,
               "skills": [
                 {
-                  "path": "./src/skills/",
+                  "path": "/skills/",
                   "virtual_path": "/skills/"
                 }
               ]
@@ -90,26 +81,17 @@ def compose_stack():
               ])
     with open(AGENTIC_CONFIG_JSON, "w") as config_file:
         agentic_config = AgenticConfig(
-            workspace="./workspace",
+            workspace=os.getenv("WORKSPACE_PATH") or "/workspace",
             models=[
-              ModelConfig.model_validate({
-                    "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-                    "model_id": "custom-nemotron-3-super-120b-a12b",
-                    "context_window": 128000,
-                    "base_url": "https://integrate.api.nvidia.com/v1",
+                ModelConfig.model_validate({
+                    "model": MAIN_AGENT_MODEL,
+                    "model_id": "custom-gemma-4-e2b-it",
+                    "context_window": 256000,
+                    "base_url": "http://host.docker.internal:8080/v1",
                     "api_key": {
                         "env_key": "NVIDIA_API_KEY"
                     }
-              }),
-            # ModelConfig.model_validate({
-                # "model": "openai:gemma-4-e2b-it",
-                # "model_id": "custom-gemma-4-e2b-it",
-                # "context_window": 256000,
-                # "base_url": "http://host.docker.internal:8080/v1",
-                # "api_key": {
-                #     "env_key": "NVIDIA_API_KEY"
-                # }
-            # })
+                })
             ],
             mcpServers={
                 "agentic_mcp": {
@@ -131,6 +113,9 @@ def compose_stack():
     )
     with stack:
         yield stack
+        std_out, std_err = stack.get_logs("bot")
+        logger.info(f"Bot logs:\n{std_out}\n{std_err}")
+
     stack.stop(down=True)
 
 @pytest.fixture(scope="session")
@@ -167,8 +152,8 @@ def reset():
 
 def get_user_agent(user_agent_prompt: str = None):
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-super-120b-a12b",
-        base_url=f"https://integrate.api.nvidia.com/v1",
+        model=JUDGE_MODEL,
+        base_url=JUDGE_MODEL_BASE_URL,
         api_key=os.environ['NVIDIA_API_KEY']
     )
 
@@ -187,8 +172,8 @@ Criterias:
 {criterias}
     """
     model = init_chat_model(
-        model="openai:nvidia/nemotron-3-super-120b-a12b",
-        base_url=f"https://integrate.api.nvidia.com/v1",
+        model=JUDGE_MODEL,
+        base_url=JUDGE_MODEL_BASE_URL,
         api_key=os.environ['NVIDIA_API_KEY']
     )
 

@@ -1,7 +1,7 @@
 import json
 import logging
 import os.path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, BaseConfig
 
@@ -80,10 +80,11 @@ class VectorStoreConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
-    model: str = Field(
-        description="Model name with provider, e.g., openai:gemma-4-e2b-it"
+    model: Union[FromEnv, str] = Field(
+        description="Model name with provider, e.g., openai:gemma-4-e2b-it",
+        union_mode="left_to_right"
     )
-    model_id: str = Field(description="Model ID for the model, e.g., gemma-4-e2b-it")
+    model_id: Union[FromEnv, str] = Field(description="Model ID for the model, e.g., gemma-4-e2b-it", union_mode="left_to_right")
     base_url: str = Field(
         default_factory=lambda: os.getenv(
             "OPENAI_API_BASE", "https://integrate.api.nvidia.com/v1"
@@ -95,10 +96,14 @@ class ModelConfig(BaseModel):
     )
     context_window: int = Field(default=128000)
 
+class RateLimitConfig(BaseModel):
+    max_requests_per_second: int = Field(
+        default=60, description="Maximum requests per second"
+    )
+    enabled: bool = Field(default=False, description="Whether rate limiting is enabled")
 
 class AgentConfig(BaseModel):
     system_prompt_path: Optional[str] = Field(None)
-    workspace_dir: str
     name: str
     description: str
     model_id: str
@@ -109,6 +114,7 @@ class AgentConfig(BaseModel):
     )
     agent_model_config: Optional[ModelConfig] = Field(None, description="Agent model config")
     instructions: Optional[str] = Field(default=None)
+    rate_limiter: RateLimitConfig = Field(default_factory=RateLimitConfig, description="Rate limiting configuration for the agent")
     enable_shell_backend: bool = Field(
         default=False,
         description=(

@@ -1,5 +1,5 @@
 {
-    "workspace": "./workspace",
+    "workspace": "/workspace",
     "mcpServers": {
         "agentic_mcp": {
             "url": "http://mcp:8811/mcp",
@@ -8,14 +8,28 @@
     },
     "models": [
         {
-            "model": "openai:nvidia/nemotron-3-super-120b-a12b",
-            "model_id": "custom-nemotron-3-super-120b-a12b",
-            "base_url": "https://integrate.api.nvidia.com/v1",
+            "model": "openai:gemma-4-e2b-it-qat-mtp",
+            "model_id": "custom-gemma-4-e2b-it",
+            "base_url": "http://host.docker.internal:8080/v1",
             "api_key": {
                 "env_key": "NVIDIA_API_KEY"
             },
-            "context_window": 128000
+            "context_window": 256000
         }
     ],
-    "tools": []
+    "tools": [],
+    "vector_store": {
+        "backend": "in_memory",
+        "enabled": true,
+        "collection_name": "agentic_memory",
+        "persist_directory": null,
+        "es_host": "localhost",
+        "es_port": 9200,
+        "embedding": {
+            "provider": "huggingface",
+            "model": "sentence-transformers/all-MiniLM-L6-v2",
+            "base_url": null,
+            "api_key": null
+        }
+    }
 }
