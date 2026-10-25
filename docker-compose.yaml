@@ -33,6 +33,7 @@ services:
         condition: service_healthy
     volumes:
       - ./resources:/bot/resources:ro
+      - ./workspace:/bot/workspace
       - ./workspace:/workspace
       - ./skills:/skills
     deploy:

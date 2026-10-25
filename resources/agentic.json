@@ -1,5 +1,5 @@
 {
-    "workspace": "/workspace",
+    "workspace": "./workspace",
     "models": [
         {
             "model": "openai:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
@@ -37,7 +37,7 @@
         "backend": "chroma",
         "enabled": true,
         "collection_name": "agentic_memory",
-        "persist_directory": "/workspace/vector_store",
+        "persist_directory": "./workspace/vector_store",
         "embedding": {
             "provider": "huggingface",
             "model": "sentence-transformers/all-MiniLM-L6-v2"
