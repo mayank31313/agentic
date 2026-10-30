@@ -37,7 +37,6 @@
         "backend": "chroma",
         "enabled": true,
         "collection_name": "agentic_memory",
-        "persist_directory": "./workspace/vector_store",
         "embedding": {
             "provider": "huggingface",
             "model": "sentence-transformers/all-MiniLM-L6-v2"

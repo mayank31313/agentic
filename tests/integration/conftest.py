@@ -18,7 +18,7 @@ from testcontainers.compose import DockerCompose
 from websockets.sync.client import connect
 
 from agentic import AgenticConfig
-from agentic.app.config import ModelConfig, AgentConfig
+from agentic.app.config import ModelConfig, AgentConfig, VectorStoreConfig
 from tests.integration.consts import AGENTIC_WORKSPACE_PATH, BOOTSTRAP_CONFIG_PATH, MAIN_MODEL_ID, AGENTIC_CONFIG_JSON, \
     MCP_FIXTURE_PATH, CRON_SCHEDULE_FILENAME, JUDGE_MODEL, MAIN_AGENT_MODEL, JUDGE_MODEL_BASE_URL
 
@@ -98,6 +98,16 @@ def compose_stack():
                     "transport": "http"
                 }
             },
+            vector_store=VectorStoreConfig.model_validate({
+                "backend": "chroma",
+                "enabled": True,
+                "collection_name": "agentic_memory",
+                "persist_directory": "vector_store",
+                "embedding": {
+                    "provider": "huggingface",
+                    "model": "sentence-transformers/all-MiniLM-L6-v2"
+                }
+            })
         )
 
         config_json = agentic_config.model_dump(mode='json')

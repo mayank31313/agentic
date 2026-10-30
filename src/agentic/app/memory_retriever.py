@@ -145,7 +145,7 @@ class MemoryRetriever:
 _memory_retriever: MemoryRetriever | None = None
 
 
-def get_memory_retriever(config: VectorStoreConfig | None = None) -> MemoryRetriever:
+def get_memory_retriever(config: VectorStoreConfig) -> MemoryRetriever:
     """Get or create the global memory retriever instance."""
     global _memory_retriever
 

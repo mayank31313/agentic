@@ -18,10 +18,10 @@
     ],
     "tools": [],
     "vector_store": {
-        "backend": "in_memory",
+        "backend": "chroma",
         "enabled": true,
         "collection_name": "agentic_memory",
-        "persist_directory": null,
+        "persist_directory": "vector_store",
         "es_host": "localhost",
         "es_port": 9200,
         "embedding": {
