@@ -81,7 +81,6 @@ def compose_stack():
               ])
     with open(AGENTIC_CONFIG_JSON, "w") as config_file:
         agentic_config = AgenticConfig(
-            workspace=os.getenv("WORKSPACE_PATH") or "/workspace",
             models=[
                 ModelConfig.model_validate({
                     "model": MAIN_AGENT_MODEL,

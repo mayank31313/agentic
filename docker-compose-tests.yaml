@@ -5,7 +5,7 @@ services:
       - .env.example
     volumes:
       - ./tests/resources:/bot/resources:ro
-      - ./tests/workspace:/workspace
+      - ./tests/workspace:/bot/workspace
       - ./downloads:/bot/downloads
       - ./skills:/skills
   mcp:

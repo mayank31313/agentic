@@ -1,18 +1,41 @@
 import logging
 import os
+import re
 from uuid import UUID, uuid4
 
 from cndi.annotations import Autowired
 from cndi.annotations.events import EventBus
 from cndi.env import getContextEnvironment
 from langchain_core.tools import tool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from tinydb import Query, TinyDB
 
 from agentic.app.common.tools import ToolsRegistry
-from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID
+from agentic.app.config import AgenticConfig
+from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID, CRON_SCHEDULE_FILENAME_ENV, \
+    resolve_workspace_path
 
 logger = logging.getLogger(__name__)
+
+AGENT_NAME_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
+
+
+def check_agent_exists(
+    agentic_config: AgenticConfig, agent_name: str
+) -> str | None:
+    """Return an error message if ``agent_name`` is not a known agent, else ``None``.
+
+    Skipped (returns ``None``) when no config is available.
+    """
+    if agentic_config is None:
+        return None
+    available = agentic_config.list_agent_names()
+    if agent_name in available:
+        return None
+    return (
+        f"Error: agent '{agent_name}' does not exist. "
+        f"Available agents: {', '.join(available) or 'none'}"
+    )
 
 
 class SubAgentConfig(BaseModel):
@@ -24,6 +47,24 @@ class SubAgentConfig(BaseModel):
         ...,
         description="Registered agent name, use agentic cli to list agents and identify the exact agent name",
     )
+
+    @field_validator("agent_name")
+    @classmethod
+    def _validate_agent_name(cls, value: str) -> str:
+        """Reject empty or unsafe names.
+
+        The name is used to build the path ``<workspace>/agents/<name>/``, so
+        only letters, digits, ``_`` and ``-`` are allowed (no separators or
+        ``..``), which also prevents path traversal.
+        """
+        value = value.strip()
+        if not value:
+            raise ValueError("agent_name must not be empty")
+        if not AGENT_NAME_PATTERN.fullmatch(value):
+            raise ValueError(
+                f"Invalid agent_name {value!r}: use only letters, digits, '_' and '-'"
+            )
+        return value
 
 
 class Delivery(BaseModel):
@@ -54,14 +95,15 @@ class CronSchedule(CronSettings):
     )
 
 
-def get_cron_tools(event_bus: EventBus):
+def get_cron_tools(event_bus: EventBus, agentic_config: AgenticConfig):
+    cron_schedule_filename = resolve_workspace_path(os.environ[CRON_SCHEDULE_FILENAME_ENV])
     @tool
     def delete_cron_tool(name: str) -> str:
         """
         Delete the cron job and schedule with cronjob name from the CronScheduleAgent name attribute, If name is unsure call list cron tool to validate
         """
         with TinyDB(
-            os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")
+            cron_schedule_filename
         ) as db:
             cron = db.get(Query().name == name)
             if cron:
@@ -81,9 +123,11 @@ def get_cron_tools(event_bus: EventBus):
         """
         Create a cron job and schedule at the specified time. The cron_settings should be a CronScheduleAgent object containing the task and cron_expression.
         """
+        if error := check_agent_exists(agentic_config, sub_agent_config.agent_name):
+            return error
         try:
             with TinyDB(
-                os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")
+                    cron_schedule_filename
             ) as db:
                 cron = CronSchedule(
                     **cron_settings.model_dump(mode="json"),
@@ -108,7 +152,7 @@ def get_cron_tools(event_bus: EventBus):
         """List all scheduled cron jobs. Call this tool to see the current cron jobs and their settings."""
         try:
             with TinyDB(
-                os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")
+                cron_schedule_filename
             ) as db:
                 crons = [CronSchedule.model_validate(row) for row in db.all()]
                 logger.info(crons)
@@ -125,9 +169,11 @@ def get_cron_tools(event_bus: EventBus):
         name: str, cron_settings: CronSettings, sub_agent_config: SubAgentConfig
     ) -> str:
         """Update existing cron job with new settings. The cron_settings should be a CronScheduleAgent object containing the name, task and cron_expression."""
+        if error := check_agent_exists(agentic_config, sub_agent_config.agent_name):
+            return error
         try:
             with TinyDB(
-                os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")
+                cron_schedule_filename
             ) as db:
                 Schedule = Query()
                 result = db.get(Schedule.name == name)
@@ -155,7 +201,9 @@ def get_cron_tools(event_bus: EventBus):
 
 
 @Autowired()
-def register_cron_tools(tools_registry: ToolsRegistry, event_bus: EventBus):
-    cron_tools = get_cron_tools(event_bus)
+def register_cron_tools(
+    tools_registry: ToolsRegistry, event_bus: EventBus, agentic_config: AgenticConfig
+):
+    cron_tools = get_cron_tools(event_bus, agentic_config)
     for tool in cron_tools:
         tools_registry.register_tool(tool.name, tool)

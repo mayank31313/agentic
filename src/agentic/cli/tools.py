@@ -6,6 +6,8 @@ import urllib.request
 
 import click
 
+from agentic.app.constants import get_workspace_root
+
 
 @click.group()
 def tools():
@@ -90,10 +92,10 @@ def list_custom(file):
     from agentic.app.common.custom_tools import CustomToolLoader
 
     agentic_config = _load_agentic_config(file)
-    loader = CustomToolLoader(agentic_config.workspace)
+    loader = CustomToolLoader(get_workspace_root())
     specs = loader.list_specs()
     if not specs:
-        click.echo(f"No custom tools found under '{agentic_config.workspace}/custom_tools/'.")
+        click.echo(f"No custom tools found under '{get_workspace_root()}/custom_tools/'.")
         return
 
     for spec in specs:
@@ -118,7 +120,7 @@ def inspect_custom(name, file):
     from agentic.app.common.custom_tools import CustomToolLoader
 
     agentic_config = _load_agentic_config(file)
-    loader = CustomToolLoader(agentic_config.workspace)
+    loader = CustomToolLoader(get_workspace_root())
     try:
         specs = {s.name: s for s in loader.list_specs()}
         spec = specs[name]
@@ -126,7 +128,7 @@ def inspect_custom(name, file):
         click.echo(f"No custom tool named '{name}' found.", err=True)
         sys.exit(1)
 
-    tool_dir = Path(agentic_config.workspace) / "custom_tools" / name
+    tool_dir = Path(get_workspace_root()) / "custom_tools" / name
     click.echo(spec.model_dump_json(indent=2))
     click.echo("-" * 30)
     if spec.kind == "python":
@@ -155,7 +157,7 @@ def approve_custom(name, file):
     from agentic.app.common.custom_tools import CustomToolLoader
 
     agentic_config = _load_agentic_config(file)
-    loader = CustomToolLoader(agentic_config.workspace)
+    loader = CustomToolLoader(get_workspace_root())
     try:
         loader.approve(name)
     except FileNotFoundError as e:
@@ -243,7 +245,7 @@ def edit_custom(
     agentic_config = _load_agentic_config(file)
     try:
         update_custom_tool(
-            workspace=agentic_config.workspace,
+            workspace=get_workspace_root(),
             name=name,
             description=description,
             tool_args=tool_args,
@@ -276,7 +278,7 @@ def remove_custom(name, file):
     from agentic.app.common.custom_tools import CustomToolLoader
 
     agentic_config = _load_agentic_config(file)
-    loader = CustomToolLoader(agentic_config.workspace)
+    loader = CustomToolLoader(get_workspace_root())
     try:
         loader.remove(name)
     except FileNotFoundError as e:

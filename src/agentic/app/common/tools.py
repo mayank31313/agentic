@@ -9,7 +9,7 @@ from typing import Literal
 
 import jinja2
 from cndi.annotations import Autowired, Bean
-from deepagents import create_deep_agent, FilesystemPermission
+from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
@@ -24,6 +24,7 @@ from agentic.app.common.custom_tools import CustomToolLoader, create_custom_tool
 from agentic.app.common.custom_tools import update_custom_tool as _update_custom_tool_files
 from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.config import AgenticConfig, ToolConfig, AgentConfig
+from agentic.app.constants import get_workspace_root
 from agentic.vector_memory.tools import get_vector_memory_tools
 
 
@@ -164,11 +165,11 @@ class ToolsRegistry:
             registered.append(mcp_tool.name)
         return registered
 
-    def reload_custom_tools(self, agentic_config: "AgenticConfig") -> list[str]:
+    def reload_custom_tools(self) -> list[str]:
         """Re-scan `<workspace>/custom_tools/` and (re-)register any custom
         tools authored via `create_custom_tool` (see
         `agentic.app.common.custom_tools`)."""
-        loader = CustomToolLoader(agentic_config.workspace)
+        loader = CustomToolLoader(get_workspace_root())
         registered = []
         for tool in loader.load_all():
             self.register_tool(tool.name, tool)
@@ -317,7 +318,7 @@ def register_workspace_sub_agents(
     `AgenticBot.reload_tools`/`agentic tools reload` to make a newly
     registered sub-agent tool usable in a running bot process.
     """
-    agents_path = os.path.join(agentic_config.workspace, "agents")
+    agents_path = os.path.join(get_workspace_root(), "agents")
     if not os.path.isdir(agents_path):
         return []
 
@@ -350,6 +351,13 @@ def set_common_tools(
     tool_notifier_middleware: ToolNotifierMiddleware,
     agent_registry: AgentRegistry,
 ):
+
+    @tool
+    def get_workspace_path() -> str:
+        "Get the absolute path to the workspace directory."
+        return get_workspace_root()
+
+    tool_registry.register_tool("get_workspace_path", get_workspace_path)
 
     @tool
     def send_message(message: str, config: RunnableConfig) -> str:
@@ -508,7 +516,7 @@ def set_common_tools(
         "Author and register a brand-new tool at runtime. Requires human approval; see docstring on the registered tool."
         try:
             _write_custom_tool_files(
-                workspace=agentic_config.workspace,
+                workspace=get_workspace_root(),
                 name=name,
                 description=description,
                 kind=kind,
@@ -522,7 +530,7 @@ def set_common_tools(
         except ValueError as e:
             return f"Error: could not create tool '{name}': {e}"
 
-        tool_registry.reload_custom_tools(agentic_config)
+        tool_registry.reload_custom_tools()
         return (
             f"Custom tool '{name}' ({kind}) created and registered in the tool registry. "
             "It will require human approval on EVERY call until a human runs "
@@ -612,7 +620,7 @@ def set_common_tools(
         "Edit/update an existing agent-authored custom tool's metadata and/or source. Requires human re-approval; see docstring on the registered tool."
         try:
             _update_custom_tool_files(
-                workspace=agentic_config.workspace,
+                workspace=get_workspace_root(),
                 name=name,
                 description=description,
                 tool_args=tool_args,
@@ -625,7 +633,7 @@ def set_common_tools(
         except ValueError as e:
             return f"Error: could not update tool '{name}': {e}"
 
-        tool_registry.reload_custom_tools(agentic_config)
+        tool_registry.reload_custom_tools()
         return (
             f"Custom tool '{name}' updated. Because it was edited, it now requires human "
             f"approval on EVERY call again, even if it was previously approved — a human must "
@@ -665,4 +673,4 @@ def set_common_tools(
     tool_registry.register_tool("update_custom_tool", update_custom_tool_langchain_tool)
 
     register_workspace_sub_agents(tool_registry, agentic_config, tool_notifier_middleware, agent_registry)
-    tool_registry.reload_custom_tools(agentic_config)
+    tool_registry.reload_custom_tools()

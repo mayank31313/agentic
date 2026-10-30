@@ -5,6 +5,8 @@ from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, BaseConfig
 
+from agentic.app.constants import get_workspace_root
+
 
 class FromEnv(BaseModel):
     env_key: str = Field(description="Environment variable key to fetch the value from")
@@ -179,7 +181,6 @@ class AgentConfig(BaseModel):
             file.writelines(file_contents)
 
 class AgenticConfig(BaseModel):
-    workspace: str
     mcpServers: dict[str, dict] = Field(description="MCP Server configuration")
     models: list[ModelConfig] = Field(description="List of models")
     tools: list[ToolConfig] = Field(default_factory=list, description="List of tools")
@@ -195,7 +196,7 @@ class AgenticConfig(BaseModel):
         return None
 
     def get_agent(self, name: str) -> AgentConfig:
-        agent_file  = f"{self.workspace}/agents/{name}/instructions.md"
+        agent_file  = f"{get_workspace_root()}/agents/{name}/instructions.md"
         if os.path.exists(agent_file):
             return AgentConfig.load(agent_file, self)
         else:
@@ -208,7 +209,7 @@ class AgenticConfig(BaseModel):
         `docs/creating-agents-and-skills.md`) — there is no separate
         `agents` list in the JSON config.
         """
-        agents_dir = os.path.join(self.workspace, "agents")
+        agents_dir = os.path.join(get_workspace_root(), "agents")
         if not os.path.isdir(agents_dir):
             return []
 

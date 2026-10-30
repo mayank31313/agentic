@@ -116,7 +116,7 @@ register it with `AdapterRegistry`, and start it from `bot_app.py`.
 |---|---|---|
 | `__init__.py` | Package marker. | Rarely. |
 | `cron_scheduler.py` | APScheduler bean. Loads jobs from `cron_schedules.json` (`CRON_SCHEDULE_FILENAME`, TinyDB), runs `execute_task()` against agents in `AgentRegistry`, and reacts to `CRON_UPDATE_EVENT`. | Changing how jobs are scheduled or executed. |
-| `tools.py` | Models `CronSettings`, `CronSchedule`, `Delivery`, `SubAgentConfig`, and agent tools `create_cron_tool`, `update_cron_tool`, `delete_cron_tool`, `list_cron_tool`. | Changing the cron schema or its tools. |
+| `tools.py` | Models `CronSettings`, `CronSchedule`, `Delivery`, `SubAgentConfig` (validates `agent_name` format and, in the tools, that the agent exists), and agent tools `create_cron_tool`, `update_cron_tool`, `delete_cron_tool`, `list_cron_tool`. | Changing the cron schema or its tools. |
 
 ## `src/agentic/agentic_mcp/` (MCP tool servers)
 

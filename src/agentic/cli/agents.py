@@ -3,6 +3,8 @@ import sys
 import os
 import click
 
+from agentic.app.constants import get_workspace_root
+
 
 @click.group()
 def agents():
@@ -54,7 +56,7 @@ def list(file):
 
     results = agentic_config.list_agents()
     if not results:
-        click.echo(f"No agents found under '{agentic_config.workspace}/agents/'.")
+        click.echo(f"No agents found under '{get_workspace_root()}/agents/'.")
         return
 
     click.echo("Available Agents:")
@@ -198,7 +200,7 @@ def write(agent_name, config_source, instructions_source, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_dir = os.path.join(agentic_config.workspace, "agents", agent_name)
+    agent_dir = os.path.join(get_worspace_root(), "agents", agent_name)
     agent_path = os.path.join(agent_dir, "instructions.md")
     if os.path.isfile(agent_path):
         click.echo(
@@ -315,7 +317,7 @@ def update(agent_name, config_source, instructions_source, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_path = os.path.join(agentic_config.workspace, "agents", agent_name, "instructions.md")
+    agent_path = os.path.join(get_workspace_root(), "agents", agent_name, "instructions.md")
     if not os.path.isfile(agent_path):
         click.echo(
             f"Agent '{agent_name}' not found at '{agent_path}'. Use 'agentic agents write' to create it.",
@@ -346,7 +348,7 @@ def update(agent_name, config_source, instructions_source, file):
 
     if instructions_source is not None:
         if instructions_source.startswith('/workspace/'):
-            instructions_source = instructions_source.replace('/workspace/', agentic_config.workspace + '/')
+            instructions_source = instructions_source.replace('/workspace/',get_workspace_root() + '/')
         instructions_text = _resolve_text(instructions_source)
 
     agent_config, errors = _build_and_validate_agent_config(
@@ -415,7 +417,7 @@ def show(agent_name, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_path = os.path.join(agentic_config.workspace, "agents", agent_name, "instructions.md")
+    agent_path = os.path.join(get_worspace_root(), "agents", agent_name, "instructions.md")
     if not os.path.isfile(agent_path):
         click.echo(f"Agent instructions file not found: {agent_path}", err=True)
         sys.exit(1)
@@ -463,7 +465,7 @@ def validate(agent_name, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_path = os.path.join(agentic_config.workspace, "agents", agent_name, "instructions.md")
+    agent_path = os.path.join(get_worspace_root(), "agents", agent_name, "instructions.md")
     if not os.path.isfile(agent_path):
         click.echo(f"Agent instructions file not found: {agent_path}", err=True)
         sys.exit(1)

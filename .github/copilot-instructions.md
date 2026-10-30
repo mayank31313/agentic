@@ -30,6 +30,11 @@ When writing or modifying code (Chat, edits, coding agent), Copilot should:
    usage, configuration, or architecture changes.
 4. Mention the structure-doc update in the commit/PR summary (use a `docs:`
    commit if it is a standalone change).
+5. **Keep the agentic CLI skill in sync.** If you add, remove, rename, or
+   change the behavior, arguments, or output of any CLI command under
+   `src/agentic/cli/`, update `skills/agentic-cli/SKILLS.md` (and
+   `skills/agentic-cli/scripts/run_agentic.py` if the invocation changes) in
+   the same change, alongside `docs/cli.md`.
 
 ## Code review guidelines
 
@@ -80,7 +85,10 @@ When reviewing pull requests or diffs, Copilot should:
    tool, channel adapter, CLI command, or Alembic migration) without updating
    that page, and suggest the exact table row(s) to add or change. Use a
    `docs:` commit/PR type for pure structure-doc updates.
-9. **Be constructive, not just critical.** For every issue raised, propose a
+9. **Agentic CLI skill.** Flag any PR that changes CLI commands, arguments,
+   or output under `src/agentic/cli/` without updating
+   `skills/agentic-cli/SKILLS.md`, and suggest the exact edits.
+10. **Be constructive, not just critical.** For every issue raised, propose a
    concrete fix or alternative snippet, not just "this is wrong." Prioritize
    feedback by severity (blocking bug/security issue vs. nit/style).
 

@@ -11,10 +11,8 @@ from cndi.annotations.events import OnEvent
 from cndi.env import getContextEnvironment
 from tinydb import TinyDB
 
-from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry
-from agentic.app.common.tools import ToolsRegistry
-from agentic.app.constants import CRON_UPDATE_EVENT
+from agentic.app.constants import CRON_UPDATE_EVENT, CRON_SCHEDULE_FILENAME_ENV, resolve_workspace_path
 from agentic.app.scheduler.tools import CronSchedule
 
 logger = logging.getLogger(__name__)
@@ -25,9 +23,9 @@ def job_listener(event):
 
 
 @Bean()
-def getBankgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
+def getBackgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
     time_zone = getContextEnvironment("cron.scheduler.timezone", "Europe/London")
-
+    cron_schedule_filename = resolve_workspace_path(os.environ[CRON_SCHEDULE_FILENAME_ENV])
     executors = {
         "default": {"type": "threadpool", "max_workers": 20},
         "processpool": ProcessPoolExecutor(max_workers=5),
@@ -60,7 +58,7 @@ def getBankgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler
         result = asyncio.run(agent.ainvoke(dict(messages=cron.task))).get("messages")
         logger.info(result)
 
-    with TinyDB(os.environ.get("CRON_SCHEDULE_FILENAME", "cron_schedules.json")) as db:
+    with TinyDB(cron_schedule_filename) as db:
         crons = [CronSchedule.model_validate(row) for row in db.all()]
         scheduler = BackgroundScheduler()
         scheduler.configure(executors=executors, timezone=time_zone)
