@@ -31,3 +31,10 @@ def get_workspace_root() -> str:
     If not set, it defaults to the current working directory.
     """
     return os.environ.get(WORKSPACE_ROOT_ENV, os.getcwd())
+
+def resolve_workspace_path(relative_path: str) -> str:
+    """
+    Resolve a relative path to an absolute path within the workspace.
+    """
+    workspace_root = get_workspace_root()
+    return os.path.abspath(os.path.join(workspace_root, relative_path))

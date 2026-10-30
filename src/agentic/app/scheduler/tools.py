@@ -12,7 +12,8 @@ from tinydb import Query, TinyDB
 
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgenticConfig
-from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID, CRON_SCHEDULE_FILENAME_ENV
+from agentic.app.constants import CRON_UPDATE_EVENT, TELEGRAM_BOT_DEFAULT_CHAT_ID, CRON_SCHEDULE_FILENAME_ENV, \
+    resolve_workspace_path
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class CronSchedule(CronSettings):
 
 
 def get_cron_tools(event_bus: EventBus, agentic_config: AgenticConfig):
-    cron_schedule_filename = os.environ.get(CRON_SCHEDULE_FILENAME_ENV)
+    cron_schedule_filename = resolve_workspace_path(os.environ[CRON_SCHEDULE_FILENAME_ENV])
     @tool
     def delete_cron_tool(name: str) -> str:
         """

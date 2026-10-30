@@ -12,7 +12,7 @@ from cndi.env import getContextEnvironment
 from tinydb import TinyDB
 
 from agentic.app.agents import AgentRegistry
-from agentic.app.constants import CRON_UPDATE_EVENT, CRON_SCHEDULE_FILENAME_ENV
+from agentic.app.constants import CRON_UPDATE_EVENT, CRON_SCHEDULE_FILENAME_ENV, resolve_workspace_path
 from agentic.app.scheduler.tools import CronSchedule
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def job_listener(event):
 @Bean()
 def getBackgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
     time_zone = getContextEnvironment("cron.scheduler.timezone", "Europe/London")
-    cron_schedule_filename = os.environ.get(CRON_SCHEDULE_FILENAME_ENV)
+    cron_schedule_filename = resolve_workspace_path(os.environ[CRON_SCHEDULE_FILENAME_ENV])
     executors = {
         "default": {"type": "threadpool", "max_workers": 20},
         "processpool": ProcessPoolExecutor(max_workers=5),

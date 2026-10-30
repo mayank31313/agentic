@@ -19,7 +19,7 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL}
-      CRON_SCHEDULE_FILENAME: /bot/workspace/cron_schedule.json
+      CRON_SCHEDULE_FILENAME: cron_schedule.json
       AGENTIC_WORKSPACE_ROOT: /bot/workspace
     env_file:
       - .env
