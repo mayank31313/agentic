@@ -59,15 +59,14 @@ def execute_agent(websocket, judge, scenario_file):
             message, messages = send_message(text=user_response.content, websocket=websocket)
             judge_response = judge.invoke(dict(user_query="", response=message.metadata['response'][0]['text'], criterias=scenario.judge.criteria))
 
-            logger.info(f"Judge verdict: {judge_response}")
             if judge_response.passed and judge_response.score >= 4:
                 count = 12
                 break
             else:
-                logger.info(f"Judge failed: {judge_response.reasoning}")
+                logger.info(f"Judge failed: {judge_response}")
 
             count += 1
 
-        assert judge_response.passed and judge_response.score >= 4, f"Judge failed: {judge_response.reasoning}"
+        assert judge_response.passed and judge_response.score >= 4, f"Judge failed: {judge_response}"
         if count == 12:
             logger.info("Agent Bootstrap is complete and there are no questions from bot")
