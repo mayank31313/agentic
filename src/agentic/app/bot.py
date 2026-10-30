@@ -48,7 +48,6 @@ class AgenticBot:
                 )
             )
         self.memory = Memory(
-            workspace=get_workspace_root(),
             vector_store_config=self.agenticConfig.vector_store,
         )
 

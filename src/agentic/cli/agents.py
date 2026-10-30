@@ -200,7 +200,7 @@ def write(agent_name, config_source, instructions_source, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_dir = os.path.join(get_worspace_root(), "agents", agent_name)
+    agent_dir = os.path.join(get_workspace_root(), "agents", agent_name)
     agent_path = os.path.join(agent_dir, "instructions.md")
     if os.path.isfile(agent_path):
         click.echo(
@@ -417,7 +417,7 @@ def show(agent_name, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_path = os.path.join(get_worspace_root(), "agents", agent_name, "instructions.md")
+    agent_path = os.path.join(get_workspace_root(), "agents", agent_name, "instructions.md")
     if not os.path.isfile(agent_path):
         click.echo(f"Agent instructions file not found: {agent_path}", err=True)
         sys.exit(1)
@@ -465,7 +465,7 @@ def validate(agent_name, file):
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(1)
 
-    agent_path = os.path.join(get_worspace_root(), "agents", agent_name, "instructions.md")
+    agent_path = os.path.join(get_workspace_root(), "agents", agent_name, "instructions.md")
     if not os.path.isfile(agent_path):
         click.echo(f"Agent instructions file not found: {agent_path}", err=True)
         sys.exit(1)

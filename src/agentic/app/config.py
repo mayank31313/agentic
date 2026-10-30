@@ -73,8 +73,8 @@ class VectorStoreConfig(BaseModel):
     backend: str = Field(default="in_memory", description="Vector store backend")
     enabled: bool = Field(default=True)
     collection_name: str = Field(default="agentic_memory")
-    persist_directory: str | None = Field(
-        default=None, description="Used by file-backed backends (e.g. chroma)"
+    persist_directory: str = Field(
+        default="vector_store", description="Used by file-backed backends (e.g. chroma)"
     )
     es_host: str = Field(default="localhost")
     es_port: int = Field(default=9200)

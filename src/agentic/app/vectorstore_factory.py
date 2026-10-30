@@ -19,6 +19,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore, VectorStore
 
 from agentic.app.config import EmbeddingConfig, VectorStoreConfig
+from agentic.app.constants import resolve_workspace_path
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def _build_chroma(config: VectorStoreConfig, embeddings: Embeddings) -> VectorSt
     return Chroma(
         collection_name=config.collection_name,
         embedding_function=embeddings,
-        persist_directory=config.persist_directory,
+        persist_directory=resolve_workspace_path(config.persist_directory),
     )
 
 
