@@ -357,6 +357,8 @@ def set_common_tools(
         "Get the absolute path to the workspace directory."
         return get_workspace_root()
 
+    tool_registry.register_tool("get_workspace_path", get_workspace_path)
+
     @tool
     def send_message(message: str, config: RunnableConfig) -> str:
         "Send a message to a specified channel (e.g., Telegram) and return the status."
