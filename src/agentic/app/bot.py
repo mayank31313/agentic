@@ -14,6 +14,7 @@ from agentic.app.common.memory import Memory
 from agentic.app.common.middleware import ToolNotifierMiddleware
 from agentic.app.common.tools import ToolsRegistry
 from agentic.app.config import AgentConfig, AgentToolConfig
+from agentic.app.constants import get_workspace_root
 from agentic.app.observability import get_langfuse_handler
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class AgenticBot:
                 )
             )
         self.memory = Memory(
-            workspace=self.agenticConfig.workspace,
+            workspace=get_workspace_root(),
             vector_store_config=self.agenticConfig.vector_store,
         )
 
@@ -58,7 +59,7 @@ class AgenticBot:
             if tool_config.require_approval:
                 approvable_tools.append(tool_config)
 
-        custom_tool_loader = CustomToolLoader(self.agenticConfig.workspace)
+        custom_tool_loader = CustomToolLoader(get_workspace_root())
         for spec in custom_tool_loader.list_specs():
             if not spec.approved and not any(t.name == spec.name for t in approvable_tools):
                 approvable_tools.append(

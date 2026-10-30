@@ -16,7 +16,7 @@ from telegram.ext import Application
 
 from agentic import AgenticConfig
 from agentic.app.bot import AgenticBot
-from agentic.app.constants import AGENTIC_FILE_NAME_PROP
+from agentic.app.constants import AGENTIC_FILE_NAME_PROP, check_for_required_env_vars
 from agentic.app.gateway.adapters.telegram.bot import is_telegram_channel_enabled
 from agentic.app.gateway.adapters.websockets import WebSocketConnectionManager
 from agentic.app.gateway.config import Gateway
@@ -53,7 +53,6 @@ def getAgenticConfig() -> AgenticConfig:
         # e.g. `/workspace/agents/main/instructions.md` for the default
         # "main" agent.
         agentic = AgenticConfig(
-            workspace="./workspace",
             mcpServers={
                 "alice_mcps": {
                     "url": "http://host.docker.internal:8811/sse",
@@ -95,6 +94,8 @@ def main(
 
 
 def run_bot():
+    check_for_required_env_vars()
+
     app = AppInitializer()
     app.componentScan("cndi.secrets")
     app.componentScan("agentic.app")

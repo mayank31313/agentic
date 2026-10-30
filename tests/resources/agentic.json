@@ -1,5 +1,4 @@
 {
-    "workspace": "/workspace",
     "mcpServers": {
         "agentic_mcp": {
             "url": "http://mcp:8811/mcp",
