@@ -4,18 +4,17 @@ from pathlib import Path
 
 from agentic.app.common.providers import DateTimeProvider
 from agentic.app.config import VectorStoreConfig
+from agentic.app.constants import resolve_workspace_path
 from agentic.app.memory_retriever import MemoryRetriever, get_memory_retriever
 
 
 class Memory:
     def __init__(
         self,
-        workspace: str,
         session_id: str = None,
         vector_store_config: VectorStoreConfig | None = None,
         retriever: MemoryRetriever | None = None,
     ):
-        self.workspace = workspace
         self.memory = []
         self.session_id = session_id or str(uuid.uuid4())
         # Semantic (vector-store backed) memory — see `add_memory`. Injecting
@@ -37,7 +36,7 @@ class Memory:
         self.retriever.add_message(chat_id=chat_id, role=role, content=content)
 
     def load(self, file_path_in_workspace: str):
-        file_path = os.path.join(self.workspace, file_path_in_workspace)
+        file_path = resolve_workspace_path(file_path_in_workspace)
         if not os.path.exists(file_path):
             return
         with open(file_path, "r", encoding="utf-8") as f:
@@ -49,8 +48,9 @@ class Memory:
 
     def write(self):
         date_string = DateTimeProvider.date_today_str()
-        memory_file = os.path.join(self.workspace, "memory", f"{date_string}.md")
-        os.makedirs(Path(self.workspace, "memory"), exist_ok=True)
+        memory_dir = resolve_workspace_path("memory")
+        memory_file = os.path.join(memory_dir, f"{date_string}.md")
+        os.makedirs(memory_dir, exist_ok=True)
         with open(memory_file, "a", encoding="utf-8") as f:
             f.writelines([f"{self.session_id}::{data['type']}\t:: {data['text']}\n" for data in self.memory])
 
