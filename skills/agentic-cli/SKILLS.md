@@ -241,6 +241,86 @@ agentic agents run <agent_name> -t "..."
   because this command exits 0; check the printed output for the
   placeholder notice.
 
+## Creating a custom tool
+
+There is **no `agentic tools custom create` CLI command**. New custom tools
+are authored through the agent-side `create_custom_tool` tool (not the
+shell). The CLI is used afterwards to review, approve, edit, and remove them.
+Tools live under `<workspace>/custom_tools/<name>/`.
+
+### 1. Write the source into the workspace first
+
+`create_custom_tool` never accepts inline source — it only reads files that
+already exist inside the workspace (paths are workspace-relative; `..`
+escapes are rejected). Write the file with your filesystem write tool:
+
+- **kind `python`**: one `.py` file defining a top-level `run(**kwargs)`.
+  Only these imports are allowed: `json, math, re, datetime, itertools,
+  statistics, textwrap, typing, decimal, collections, string, random, uuid,
+  dataclasses, enum, functools`. `eval`, `exec`, `compile`, `__import__`,
+  `open`, `input`, `exit`, `quit` and `os/sys/subprocess/socket/shutil/
+  pathlib/importlib/ctypes/http/urllib/requests` access are rejected.
+- **kind `docker`**: a `Dockerfile` plus an `entrypoint` script. Use this
+  only when extra dependencies or stronger isolation are needed.
+
+### 2. Call `create_custom_tool`
+
+Pass these as **top-level** arguments (do not wrap them in `args`):
+
+| Argument | Notes |
+|---|---|
+| `name` | snake_case, 3-64 chars, starts with a lowercase letter, must be unique |
+| `description` | What the tool does; shown to the LLM |
+| `kind` | `python` or `docker` |
+| `tool_args` | Optional map of the **new tool's** arg name → type (`string`, `integer`, `number`, `boolean`, `array`, `object`; aliases `str`, `int`, `float`, `bool`, `list`, `dict`). All args are required. |
+| `python_source_path` | Required for `python` |
+| `dockerfile_path`, `entrypoint_path` | Required for `docker` |
+| `network_access` | Docker only, default `false` |
+| `timeout_seconds` | Default `30` |
+
+Example call arguments:
+```json
+{
+  "name": "add_numbers",
+  "description": "Add two integers",
+  "kind": "python",
+  "tool_args": {"a": "integer", "b": "integer"},
+  "python_source_path": "custom_tools/drafts/add_numbers.py"
+}
+```
+Minimal source for that example:
+```python
+def run(a, b):
+    return {"sum": a + b}
+```
+
+A missing file, invalid name, unknown arg type, validation violation, or an
+already-existing tool name returns an `Error: ...` message and writes
+nothing. Fix the reported problem and retry.
+
+### 3. Review and approve (human step, via the CLI)
+
+A new tool requires human approval on **every call** until approved. Run
+these through your execute tool from the project root:
+
+```bash
+agentic tools custom list
+agentic tools custom inspect add_numbers
+agentic tools custom approve add_numbers   # only after reviewing the source
+agentic tools reload                       # apply to a running bot
+```
+
+Never run `approve` yourself without the user having reviewed the
+`inspect` output. Other lifecycle commands:
+
+```bash
+agentic tools custom edit add_numbers --description "..." --python-source custom_tools/drafts/add_numbers_v2.py
+agentic tools custom remove add_numbers
+```
+Any `edit` resets approval, so re-`inspect` and re-`approve` afterwards.
+`reload` resets in-flight conversation state — prefer doing it between
+conversations.
+
 ## If this skill itself fails to load
 
 If deepagents logs something like:

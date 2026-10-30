@@ -11,9 +11,7 @@ from cndi.annotations.events import OnEvent
 from cndi.env import getContextEnvironment
 from tinydb import TinyDB
 
-from agentic import AgenticConfig
 from agentic.app.agents import AgentRegistry
-from agentic.app.common.tools import ToolsRegistry
 from agentic.app.constants import CRON_UPDATE_EVENT
 from agentic.app.scheduler.tools import CronSchedule
 
@@ -25,7 +23,7 @@ def job_listener(event):
 
 
 @Bean()
-def getBankgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
+def getBackgroundScheduler(agent_registry: AgentRegistry) -> BackgroundScheduler:
     time_zone = getContextEnvironment("cron.scheduler.timezone", "Europe/London")
 
     executors = {

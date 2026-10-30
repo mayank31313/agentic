@@ -87,6 +87,7 @@ class AgenticBot:
             middlewares=self.middelwares,
         )
 
+
         self.agent_registry.register_agent(self.agentConfig.name, self.agent)
 
     def reload_tools(self) -> dict:

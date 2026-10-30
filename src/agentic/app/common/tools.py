@@ -9,7 +9,7 @@ from typing import Literal
 
 import jinja2
 from cndi.annotations import Autowired, Bean
-from deepagents import create_deep_agent, FilesystemPermission
+from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
@@ -350,6 +350,11 @@ def set_common_tools(
     tool_notifier_middleware: ToolNotifierMiddleware,
     agent_registry: AgentRegistry,
 ):
+
+    @tool
+    def get_workspace_path() -> str:
+        "Get the absolute path to the workspace directory."
+        return os.path.abspath(agentic_config.workspace)
 
     @tool
     def send_message(message: str, config: RunnableConfig) -> str:
