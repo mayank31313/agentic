@@ -11,6 +11,6 @@ RUN uv sync --no-install-project
 COPY . $AGENTIC_BOT_HOME/
 ENV PATH="/root/.local/bin:$PATH"
 
-RUN uv sync && uv run alembic upgrade head
+RUN uv sync
 
-CMD ["uv", "run","agentic", "run"]
+ENTRYPOINT ["/bot/entrypoint.sh"]
